@@ -1,10 +1,10 @@
 [build]
   publish = "public"
   functions = "netlify/functions"
-  command = "npm run build:netlify"
+  command = "echo 'Using pre-built JavaScript functions - no build required'"
 
 [functions]
-  external_node_modules = ["@modelcontextprotocol/sdk", "zod", "execa"]
+  node_bundler = "nft"
 
 [functions."*"]
   timeout = 10

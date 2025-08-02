@@ -507,6 +507,7 @@ describe('Netlify Function Endpoints JSON Format Tests', () => {
         return;
       }
 
+      // Test HTML dashboard (default GET request)
       const event = {
         httpMethod: 'GET',
         headers: {}
@@ -514,12 +515,15 @@ describe('Netlify Function Endpoints JSON Format Tests', () => {
 
       const result = await analyticsHandler(event, {});
 
-      // Just validate the response is valid JSON format
+      // Validate HTML response structure
       expect(result).toHaveProperty('statusCode');
       expect(result).toHaveProperty('headers');
       expect(result).toHaveProperty('body');
-      expect(result.headers['Content-Type']).toBe('application/json');
-      expect(() => JSON.parse(result.body)).not.toThrow();
+      expect(result.statusCode).toBe(200);
+      
+      // Should return HTML dashboard by default
+      expect(result.headers['Content-Type']).toBe('text/html');
+      expect(result.body).toContain('NPM Plus Analytics Dashboard');
     });
   });
 

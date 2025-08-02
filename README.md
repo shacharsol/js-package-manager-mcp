@@ -170,22 +170,33 @@ See [Windsurf Usage Guide](docs/CURSOR_WINDSURF_USAGE.md#-windsurf-usage)
 <details>
 <summary><strong>🎯 Cursor</strong></summary>
 
-**Method 1: Cursor Settings**
+**Method 1: NPX Installation (Recommended)**
 Add to your Cursor MCP configuration:
 ```json
 {
-  "mcp": {
-    "servers": {
-      "npmplus-mcp": {
-        "transport": "http",
-        "url": "https://api.npmplus.dev/mcp"
-      }
+  "mcpServers": {
+    "npmplus-mcp": {
+      "command": "npx",
+      "args": ["-y", "npmplus-mcp-server"]
     }
   }
 }
 ```
 
-**Method 2: .cursorrules File**
+**Method 2: Hosted Service**
+For the hosted version, add to your Cursor MCP configuration:
+```json
+{
+  "mcpServers": {
+    "npmplus-mcp": {
+      "transport": "http",
+      "url": "https://api.npmplus.dev/mcp"
+    }
+  }
+}
+```
+
+**Method 3: .cursorrules File**
 ```
 # NPM Plus MCP Integration
 This project uses NPM Plus (https://api.npmplus.dev/mcp) for AI-powered package management.

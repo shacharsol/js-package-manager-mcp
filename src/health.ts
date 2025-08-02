@@ -1,5 +1,5 @@
 import { Handler } from '@netlify/functions';
-import { SERVICE_VERSION } from './constants';
+import { VERSION } from './constants.js';
 
 /**
  * Netlify Function handler for the health endpoint.
@@ -40,7 +40,7 @@ export const handler: Handler = async (event, context) => {
       status: 'healthy',
       service: 'npm-plus-mcp-server',
       timestamp: new Date().toISOString(),
-      version: SERVICE_VERSION,
+      version: VERSION,
       endpoints: {
         mcp: '/.netlify/functions/mcp',
         health: '/.netlify/functions/health'

@@ -2,42 +2,40 @@
 
 This directory contains example deployment configurations that you can customize for your own deployment.
 
-## Files to copy and customize:
+## Quick Setup (Automated):
 
-1. **netlify.toml.example** → `netlify.toml` (in project root)
-2. **netlify-functions/** → `netlify/functions/` (in project root)
-3. **test-deployment.sh.example** → `scripts/test-deployment.sh`
-
-## Setup Instructions:
-
-### 1. For Netlify Deployment:
 ```bash
-# Copy the example netlify config
+# Run the setup script to create all deployment files locally
+./deployment/setup-deployment.sh
+```
+
+This will create:
+- `netlify.toml` (gitignored)
+- `netlify/functions/` (gitignored)  
+- `scripts/test-deployment.sh` (gitignored)
+- `package.user.json` (gitignored) - contains deployment scripts
+
+## Manual Setup:
+
+### 1. Copy deployment files:
+```bash
 cp deployment/netlify.toml.example netlify.toml
-
-# Copy the netlify functions
 cp -r deployment/netlify-functions netlify/functions
-
-# Update the URLs in test-deployment.sh
 cp deployment/test-deployment.sh.example scripts/test-deployment.sh
-# Edit scripts/test-deployment.sh to use your domain
+cp deployment/package.user.json.example package.user.json
+chmod +x scripts/test-deployment.sh
 ```
 
-### 2. Update package.json scripts:
-Add these scripts to your package.json:
-```json
-{
-  "scripts": {
-    "build:netlify": "npm run build && npm run copy:netlify",
-    "copy:netlify": "echo 'Netlify functions ready'",
-    "dev:netlify": "netlify dev",
-    "test:deployment": "./scripts/test-deployment.sh",
-    "deploy:netlify": "netlify deploy --prod"
-  }
-}
+### 2. Install deployment dependencies:
+```bash
+npm install --save-dev netlify-cli
 ```
 
-### 3. Environment Variables:
+### 3. Customize your deployment:
+- Edit `scripts/test-deployment.sh` to use your domain URLs
+- Modify `netlify.toml` if needed for your configuration
+
+### 4. Environment Variables:
 Set these in your deployment platform:
 - `NODE_ENV=production`
 

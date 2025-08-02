@@ -31,9 +31,24 @@
 
 ## 🚀 Quick Start
 
-### Self-Hosting (Recommended)
+### Using Hosted Service (Recommended)
 
-**Deploy your own instance:**
+**The easiest way to get started:**
+
+```json
+{
+  "mcpServers": {
+    "javascript-package-manager": {
+      "transport": "http",
+      "url": "https://api.npmplus.dev/mcp"
+    }
+  }
+}
+```
+
+### Self-Hosting (Advanced)
+
+**For customization or private deployment:**
 
 ```bash
 git clone https://github.com/shacharsol/js-package-manager-mcp.git
@@ -42,8 +57,6 @@ npm install
 npm run build
 npm start
 ```
-
-### Web Deployment
 
 **For web deployment (Netlify, Vercel, etc.):**
 
@@ -75,8 +88,8 @@ See [deployment/README.md](deployment/README.md) for detailed deployment instruc
   "mcpServers": {
     "javascript-package-manager": {
       "transport": "http",
-      "command": "node",
-      "args": ["/path/to/js-package-manager-mcp/dist/index.js"]
+      "transport": "http",
+      "url": "https://api.npmplus.dev/mcp"
     }
   }
 }
@@ -95,8 +108,8 @@ See [deployment/README.md](deployment/README.md) for detailed deployment instruc
     "servers": {
       "javascript-package-manager": {
         "transport": "http",
-        "command": "node",
-      "args": ["/path/to/js-package-manager-mcp/dist/index.js"]
+        "transport": "http",
+      "url": "https://api.npmplus.dev/mcp"
       }
     }
   }
@@ -134,8 +147,8 @@ Add to your Cursor MCP configuration:
     "servers": {
       "javascript-package-manager": {
         "transport": "http",
-        "command": "node",
-      "args": ["/path/to/js-package-manager-mcp/dist/index.js"]
+        "transport": "http",
+      "url": "https://api.npmplus.dev/mcp"
       }
     }
   }
@@ -145,7 +158,7 @@ Add to your Cursor MCP configuration:
 **Method 2: .cursorrules File**
 ```
 # NPM Plus MCP Integration
-This project uses the NPM Plus MCP server for AI-powered package management.
+This project uses NPM Plus (https://api.npmplus.dev/mcp) for AI-powered package management.
 
 Available features:
 - Package search and installation
@@ -166,8 +179,8 @@ Available features:
   "mcp.servers": {
     "javascript-package-manager": {
       "transport": "http",
-      "command": "node",
-      "args": ["/path/to/js-package-manager-mcp/dist/index.js"]
+      "transport": "http",
+      "url": "https://api.npmplus.dev/mcp"
     }
   }
 }

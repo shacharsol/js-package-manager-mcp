@@ -1,6 +1,15 @@
-# Deployment Guide
+# Custom Deployment Guide
 
-This directory contains example deployment configurations that you can customize for your own deployment.
+NPM Plus is available as a hosted service at `https://api.npmplus.dev/mcp` for easy use.
+
+**This directory is for advanced users who want to deploy their own custom instance.**
+
+## Why Deploy Your Own Instance?
+
+- 🔒 **Privacy**: Keep your package queries on your own infrastructure
+- ⚙️ **Customization**: Modify the server code for specific needs
+- 🏢 **Enterprise**: Deploy behind your corporate firewall
+- 🌍 **Regional**: Deploy closer to your location for lower latency
 
 ## Quick Setup (Automated):
 

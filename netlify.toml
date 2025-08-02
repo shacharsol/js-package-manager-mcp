@@ -1,7 +1,7 @@
 [build]
-  publish = "public"
+  publish = "dist"
   functions = "netlify/functions"
-  command = "echo 'Using pre-built JavaScript functions - no build required'"
+  command = "mkdir -p dist && echo 'API-only deployment - no static files needed' > dist/index.html"
 
 [functions]
   node_bundler = "nft"

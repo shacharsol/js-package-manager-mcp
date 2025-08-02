@@ -1,9 +1,10 @@
-// Simple health check function for Netlify
-exports.handler = async (event, context) => {
+// Health check function for Netlify
+exports.handler = async (event) => {
+  // Import constants dynamically to avoid build issues with ES modules
+  const { CORS_HEADERS, SERVER_NAME, VERSION } = await import('../../src/constants.js');
+  
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    ...CORS_HEADERS,
     'Content-Type': 'application/json'
   };
 
@@ -28,9 +29,9 @@ exports.handler = async (event, context) => {
     headers,
     body: JSON.stringify({
       status: 'healthy',
-      service: 'npm-plus-mcp-server',
+      service: SERVER_NAME,
       timestamp: new Date().toISOString(),
-      version: '1.0.0',
+      version: VERSION,
       endpoints: {
         mcp: '/.netlify/functions/mcp',
         health: '/.netlify/functions/health'

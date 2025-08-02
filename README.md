@@ -1,10 +1,9 @@
 # NPM Plus - JavaScript Package Manager for AI
 
-[![NPM Plus](https://img.shields.io/badge/NPM%20Plus-MCP%20Server-blue)](https://npmplus.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/shacharsol/js-package-manager-mcp)
 
-> 🚀 **Production-ready MCP server for intelligent JavaScript package management**  
+> 🚀 **Open-source MCP server for intelligent JavaScript package management**  
 > Works seamlessly with Claude, Windsurf, Cursor, VS Code, and any MCP-compatible AI editor.
 
 ## ✨ Features
@@ -32,9 +31,21 @@
 
 ## 🚀 Quick Start
 
-### Hosted Service (Recommended)
+### Self-Hosting (Recommended)
 
-**No installation required!** Use our production-ready hosted service:
+**Deploy your own instance:**
+
+```bash
+git clone https://github.com/shacharsol/js-package-manager-mcp.git
+cd js-package-manager-mcp
+npm install
+npm run build
+npm start
+```
+
+### Hosted Service (Alternative)
+
+**For convenience, a hosted service is available:**
 
 ```json
 {
@@ -46,8 +57,6 @@
   }
 }
 ```
-
-🌐 **Dashboard**: [npmplus.dev](https://npmplus.dev) | **API Health**: [api.npmplus.dev/health](https://api.npmplus.dev/health)
 
 ## 🛠️ Editor Setup
 
@@ -76,7 +85,7 @@
 <details>
 <summary><strong>🌊 Windsurf</strong></summary>
 
-**Create `.windsurfrc` in your project root:**
+**For hosted version, create `.windsurfrc` in your project root:**
 ```json
 {
   "mcp": {
@@ -84,6 +93,23 @@
       "javascript-package-manager": {
         "transport": "http",
         "url": "https://api.npmplus.dev/mcp"
+      }
+    }
+  }
+}
+```
+
+**For local development:**
+```json
+{
+  "mcp": {
+    "servers": {
+      "javascript-package-manager": {
+        "command": "node",
+        "args": [
+          "/path/to/javascript-package-manager/dist/index.js"
+        ],
+        "disabled": false
       }
     }
   }
@@ -255,9 +281,25 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 ## 📊 Analytics & Monitoring
 
-**Live Dashboard**: [api.npmplus.dev/analytics](https://api.npmplus.dev/analytics)
+NPM Plus includes optional analytics for self-hosted deployments:
 
-Track usage patterns, popular tools, and performance metrics in real-time.
+### Analytics Features:
+- 📊 **Basic tracking** - Console logging for debugging and monitoring
+- 🔧 **Tool usage** - Track which MCP tools are being used
+- 🚀 **Performance metrics** - Response times and success rates
+- 🔒 **Privacy-first** - Minimal data collection, IP hashing
+- ⚙️ **Configurable** - Enable via environment variables
+
+### Enable Analytics (Optional)
+For self-hosted deployments, you can enable analytics logging:
+
+```bash
+# Enable analytics logging
+ENABLE_ANALYTICS=true
+ANALYTICS_SALT=your-random-salt
+```
+
+Analytics data will be logged to console output for monitoring and debugging.
 
 ## 📄 License
 
@@ -271,4 +313,4 @@ Created with ❤️ by [Shachar Solomon](https://github.com/shacharsol) in 2025.
 
 ---
 
-[![NPM Plus Analytics](https://api.npmplus.dev/analytics?badge=true)](https://api.npmplus.dev/analytics)
+**Built with ❤️ for the open source community**

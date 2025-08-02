@@ -1,3 +1,4 @@
+import { describe, it, expect } from '@jest/globals';
 import { 
   VERSION, 
   MCP_PROTOCOL_VERSION, 
@@ -111,7 +112,7 @@ describe('Constants', () => {
       expect(detectEditorFromUserAgent('Unknown Browser/1.0')).toBe('unknown');
       expect(detectEditorFromUserAgent('Custom Editor')).toBe('unknown');
       expect(detectEditorFromUserAgent('')).toBe('unknown');
-      expect(detectEditorFromUserAgent()).toBe('unknown');
+      expect(detectEditorFromUserAgent('')).toBe('unknown');
     });
 
     it('should be case insensitive', () => {

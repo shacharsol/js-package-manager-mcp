@@ -1,4 +1,5 @@
 import NodeCache from "node-cache";
+import { CACHE_SETTINGS } from "./constants.js";
 
 export class CacheManager {
   private memoryCache: NodeCache;
@@ -6,8 +7,8 @@ export class CacheManager {
   constructor() {
     // Memory cache with different TTLs for different data types
     this.memoryCache = new NodeCache({ 
-      stdTTL: 300, // 5 minutes default
-      checkperiod: 60 // Check for expired keys every 60 seconds
+      stdTTL: CACHE_SETTINGS.SHORT_TTL,
+      checkperiod: CACHE_SETTINGS.CHECK_PERIOD
     });
   }
   
@@ -24,7 +25,7 @@ export class CacheManager {
   // Set value in cache with optional TTL
   async set<T>(key: string, value: T, ttl?: number): Promise<boolean> {
     try {
-      return this.memoryCache.set(key, value, ttl || 300);
+      return this.memoryCache.set(key, value, ttl || CACHE_SETTINGS.SHORT_TTL);
     } catch (error) {
       console.error(`Cache set error for key ${key}:`, error);
       return false;

@@ -1,23 +1,79 @@
-# Cursor MCP Configuration
-# This project includes an MCP server for JavaScript package management
+# NPM Plus MCP Integration
 
-## MCP Server Configuration
-The JavaScript Package Manager MCP server provides tools for:
-- Package search and installation
-- Security vulnerability scanning  
-- Bundle size analysis
-- Dependency management across npm/yarn/pnpm
+This project includes NPM Plus - an AI-powered JavaScript package manager that integrates with MCP-compatible editors.
 
-To use this MCP server in Cursor:
-1. Build the project: `npm run build`
-2. Configure in Cursor settings with:
-   - Command: `node`
-   - Args: `["./dist/index.js"]`
-   - Working directory: This project root
+## Available Service
+- **Hosted Service**: https://api.npmplus.dev/mcp
+- **Local Development**: Available via `npm start` (requires build)
 
 ## Available MCP Tools
-- search_packages: Search npm registry
-- install_packages/update_packages/remove_packages: Package management
-- audit_dependencies: Security scanning
-- check_bundle_size: Performance analysis
-- dependency_tree: Visualize dependencies
+
+### Package Search & Info
+- `search_packages` - Search npm registry with intelligent relevance scoring
+- `package_info` - Get detailed package metadata, dependencies, and maintainer info
+
+### Package Management  
+- `install_packages` - Install packages with dev/global options
+- `update_packages` - Update packages to latest versions
+- `remove_packages` - Clean removal of packages
+
+### Security & Analysis
+- `audit_dependencies` - Scan for vulnerabilities using GitHub Advisory Database
+- `check_vulnerability` - Check specific packages for security issues
+- `check_bundle_size` - Analyze package size impact before installation
+- `download_stats` - Get package popularity and download statistics
+
+### Advanced Analysis (Local only)
+- `dependency_tree` - Visualize dependency relationships  
+- `list_licenses` - License compliance analysis
+- `analyze_dependencies` - Detect circular dependencies and orphaned files
+
+## Usage Examples
+
+Ask the AI assistant:
+- "Search for React testing libraries"
+- "What's the bundle size of lodash?"
+- "Check if express has any security vulnerabilities"
+- "Install typescript as a dev dependency"
+- "Show me alternatives to moment.js"
+- "Audit my project dependencies for security issues"
+
+## Configuration
+
+For Cursor MCP integration, add to your MCP settings:
+```json
+{
+  "mcp": {
+    "servers": {
+      "npmplus-mcp": {
+        "transport": "http", 
+        "url": "https://api.npmplus.dev/mcp"
+      }
+    }
+  }
+}
+```
+
+## Local Development
+
+To use the local version instead of hosted:
+```bash
+npm install
+npm run build  
+npm start
+```
+
+Then update MCP config to use local server:
+```json
+{
+  "mcp": {
+    "servers": {
+      "npmplus-mcp": {
+        "command": "node",
+        "args": ["./dist/index.js"],
+        "cwd": "/path/to/this/project"
+      }
+    }
+  }
+}
+```

@@ -1,0 +1,11 @@
+{
+  "mcp": {
+    "servers": {
+      "npmplus-mcp": {
+        "transport": "http",
+        "url": "https://api.npmplus.dev/mcp",
+        "description": "NPM Plus - JavaScript package management via hosted service"
+      }
+    }
+  }
+}

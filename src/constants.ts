@@ -21,7 +21,7 @@ export const MCP_PROTOCOL_VERSION = '2024-11-05';
  * Server name identifier for MCP protocol.
  * @constant {string}
  */
-export const SERVER_NAME = 'javascript-package-manager';
+export const SERVER_NAME = 'npmplus-mcp';
 
 // ==================== PACKAGE MANAGERS ====================
 

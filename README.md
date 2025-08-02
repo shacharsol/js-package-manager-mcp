@@ -181,10 +181,10 @@ Add to your Cursor MCP configuration:
 ```
 
 **⚠️ Cursor-Specific Notes:**
-- **HTTP transport may not work reliably** - use NPX installation (recommended)
+- **Use NPX installation only** - HTTP transport not supported reliably
 - **Requires explicit prompts** in non-agent mode: "Use npmplus-mcp to..."
 - **Agent mode** increases auto-detection of MCP usage
-- **For HTTP**: Cursor may not recognize server capabilities initially - use NPX instead
+- **HTTP transport**: Currently experimental and may cause "Loading tools" issues
 
 **Method 3: .cursorrules File**
 ```

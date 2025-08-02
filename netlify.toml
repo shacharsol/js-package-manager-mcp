@@ -4,8 +4,10 @@
   command = "npm run build:netlify"
 
 [functions]
+  external_node_modules = ["@modelcontextprotocol/sdk", "zod", "execa"]
+
+[functions."*"]
   timeout = 10
-  memory = 512
 
 # Function routes
 [[redirects]]

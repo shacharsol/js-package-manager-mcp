@@ -77,9 +77,9 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 1
 fi
 
-# Deploy to production
+# Deploy to production (skip build since netlify.toml blocks it)
 echo "🌐 Deploying to production..."
-netlify deploy --prod
+netlify deploy --prod --dir=dist
 
 if [[ $? -eq 0 ]]; then
     echo ""

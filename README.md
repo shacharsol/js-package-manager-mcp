@@ -107,15 +107,12 @@ See [deployment/README.md](deployment/README.md) for detailed deployment instruc
 <details>
 <summary><strong>🌊 Windsurf</strong></summary>
 
-**For hosted version, create `.windsurfrc` in your project root:**
+**For hosted version, create `mcp_config.json` in your project root:**
 ```json
 {
-  "mcp": {
-    "servers": {
-      "npmplus-mcp": {
-        "transport": "http",
-        "url": "https://api.npmplus.dev/mcp"
-      }
+  "mcpServers": {
+    "npmplus-mcp": {
+      "serverUrl": "https://api.npmplus.dev/mcp"
     }
   }
 }
@@ -184,9 +181,10 @@ Add to your Cursor MCP configuration:
 ```
 
 **⚠️ Cursor-Specific Notes:**
-- **HTTP transport may not work reliably** - use NPX installation
+- **HTTP transport may not work reliably** - use NPX installation (recommended)
 - **Requires explicit prompts** in non-agent mode: "Use npmplus-mcp to..."
 - **Agent mode** increases auto-detection of MCP usage
+- **For HTTP**: Cursor may not recognize server capabilities initially - use NPX instead
 
 **Method 3: .cursorrules File**
 ```

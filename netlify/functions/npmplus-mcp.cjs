@@ -19,6 +19,32 @@ exports.handler = async (event, context) => {
     return { statusCode: 200, headers };
   }
 
+  // Handle GET requests for service discovery
+  if (event.httpMethod === 'GET') {
+    // Return server capabilities for service discovery
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        name: "npmplus-mcp",
+        version: "1.0.8",
+        description: "JavaScript Package Manager MCP Server",
+        capabilities: {
+          tools: {},
+          server: {
+            name: "npmplus-mcp",
+            version: "1.0.8"
+          }
+        },
+        endpoints: {
+          initialize: "POST /",
+          "tools/list": "POST /",
+          "tools/call": "POST /"
+        }
+      })
+    };
+  }
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,

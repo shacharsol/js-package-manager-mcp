@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "build:netlify": "npm run build && npm run copy:netlify",
+    "copy:netlify": "echo 'Netlify functions ready'",
+    "dev:netlify": "netlify dev",
+    "test:deployment": "./scripts/test-deployment.sh",
+    "deploy:netlify": "netlify deploy --prod",
+    "deploy:dev": "netlify deploy --alias=dev",
+    "logs:netlify": "netlify logs"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  }
+}

@@ -43,20 +43,22 @@ npm run build
 npm start
 ```
 
-### Hosted Service (Alternative)
+### Web Deployment
 
-**For convenience, a hosted service is available:**
+**For web deployment (Netlify, Vercel, etc.):**
 
-```json
-{
-  "mcpServers": {
-    "javascript-package-manager": {
-      "transport": "http",
-      "url": "https://api.npmplus.dev/mcp"
-    }
-  }
-}
+```bash
+# Run the automated setup script
+./deployment/setup-deployment.sh
+
+# Customize the deployment URLs
+nano scripts/test-deployment.sh
+
+# Deploy (example for Netlify)
+npm run deploy:netlify
 ```
+
+See [deployment/README.md](deployment/README.md) for detailed deployment instructions.
 
 ## 🛠️ Editor Setup
 
@@ -73,7 +75,8 @@ npm start
   "mcpServers": {
     "javascript-package-manager": {
       "transport": "http",
-      "url": "https://api.npmplus.dev/mcp"
+      "command": "node",
+      "args": ["/path/to/js-package-manager-mcp/dist/index.js"]
     }
   }
 }
@@ -92,7 +95,8 @@ npm start
     "servers": {
       "javascript-package-manager": {
         "transport": "http",
-        "url": "https://api.npmplus.dev/mcp"
+        "command": "node",
+      "args": ["/path/to/js-package-manager-mcp/dist/index.js"]
       }
     }
   }
@@ -130,7 +134,8 @@ Add to your Cursor MCP configuration:
     "servers": {
       "javascript-package-manager": {
         "transport": "http",
-        "url": "https://api.npmplus.dev/mcp"
+        "command": "node",
+      "args": ["/path/to/js-package-manager-mcp/dist/index.js"]
       }
     }
   }
@@ -140,7 +145,7 @@ Add to your Cursor MCP configuration:
 **Method 2: .cursorrules File**
 ```
 # NPM Plus MCP Integration
-This project uses NPM Plus (https://api.npmplus.dev/mcp) for AI-powered package management.
+This project uses the NPM Plus MCP server for AI-powered package management.
 
 Available features:
 - Package search and installation
@@ -161,7 +166,8 @@ Available features:
   "mcp.servers": {
     "javascript-package-manager": {
       "transport": "http",
-      "url": "https://api.npmplus.dev/mcp"
+      "command": "node",
+      "args": ["/path/to/js-package-manager-mcp/dist/index.js"]
     }
   }
 }

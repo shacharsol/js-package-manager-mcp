@@ -58,3 +58,4 @@ netlify.toml
 netlify/
 scripts/test-deployment.sh
 .netlify/
+package.user.json

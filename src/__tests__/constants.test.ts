@@ -22,7 +22,7 @@ describe('Constants', () => {
     });
 
     it('should have server name', () => {
-      expect(SERVER_NAME).toBe('javascript-package-manager');
+      expect(SERVER_NAME).toBe('npmplus-mcp');
     });
   });
 

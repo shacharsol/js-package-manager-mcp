@@ -52,3 +52,9 @@ analytics-db/
 private-config/
 *.private.js
 *.admin.ts
+
+# Deployment files (user-specific, not shared)
+netlify.toml
+netlify/
+scripts/test-deployment.sh
+.netlify/

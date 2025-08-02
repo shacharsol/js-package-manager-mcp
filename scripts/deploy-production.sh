@@ -299,10 +299,10 @@ if [[ $? -eq 0 ]]; then
     
     echo ""
     echo "✨ Ready for use in:"
-    echo "   • Claude Desktop"
-    echo "   • Windsurf"
-    echo "   • Cursor"
-    echo "   • VS Code + Cline"
+    echo "   • Claude Desktop (NPX)"
+    echo "   • Windsurf (NPX or HTTP)"
+    echo "   • Cursor (NPX only - HTTP not supported)"
+    echo "   • VS Code + Cline (NPX)"
     echo "   • Any MCP-compatible editor"
 else
     echo "❌ Deployment failed!"

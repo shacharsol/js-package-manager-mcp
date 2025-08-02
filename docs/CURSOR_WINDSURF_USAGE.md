@@ -11,12 +11,10 @@
 
 ```json
 {
-  "mcp": {
-    "servers": {
-      "npmplus-mcp": {
-        "command": "npx",
-        "args": ["-y", "npmplus-mcp-server"]
-      }
+  "mcpServers": {
+    "npmplus-mcp": {
+      "command": "npx",
+      "args": ["-y", "npmplus-mcp-server"]
     }
   }
 }

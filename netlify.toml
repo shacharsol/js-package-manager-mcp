@@ -1,7 +1,7 @@
 [build]
-  publish = "dist"
+  publish = "public"
   functions = "netlify/functions"
-  command = "npm run build:netlify"
+  command = "echo 'Using pre-built functions'"
 
 [functions]
   external_node_modules = ["@modelcontextprotocol/sdk", "zod", "execa"]

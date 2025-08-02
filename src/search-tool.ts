@@ -8,6 +8,37 @@ const SearchInputSchema = z.object({
   from: z.number().min(0).default(0).describe("Offset for pagination")
 });
 
+/**
+ * Response structure from npm registry search API.
+ * Contains search results with package metadata and scoring information.
+ * 
+ * @interface NpmSearchResult
+ * @example
+ * ```typescript
+ * const searchResult: NpmSearchResult = {
+ *   objects: [{
+ *     package: {
+ *       name: "lodash",
+ *       version: "4.17.21",
+ *       description: "A modern JavaScript utility library",
+ *       keywords: ["util", "functional"],
+ *       date: "2021-02-20T15:52:29.909Z",
+ *       links: { npm: "https://www.npmjs.com/package/lodash" },
+ *       author: { name: "John-David Dalton" },
+ *       publisher: { username: "mathias", email: "mathias@qiwi.be" },
+ *       maintainers: [{ username: "jdalton", email: "john@example.com" }]
+ *     },
+ *     score: {
+ *       final: 0.95,
+ *       detail: { quality: 0.98, popularity: 0.92, maintenance: 0.95 }
+ *     },
+ *     searchScore: 0.87
+ *   }],
+ *   total: 1,
+ *   time: "Wed Jan 01 2024 12:00:00 GMT+0000 (UTC)"
+ * };
+ * ```
+ */
 interface NpmSearchResult {
   objects: Array<{
     package: {

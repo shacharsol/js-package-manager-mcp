@@ -1,23 +1,99 @@
 import { fetch } from 'undici';
 import { SecurityInfo, Vulnerability, SecuritySeverity } from '../models/Package.js';
+import { URLS, NPM_ECOSYSTEM } from '../constants.js';
 
 /**
- * Service for security vulnerability checking
+ * Service for security vulnerability checking across multiple databases.
+ * Integrates with GitHub Security Advisory and OSV (Open Source Vulnerabilities) databases
+ * to provide comprehensive security analysis for npm packages.
+ * 
+ * @class SecurityService
+ * @example
+ * ```typescript
+ * const securityService = new SecurityService();
+ * 
+ * // Check vulnerabilities for a package
+ * const securityInfo = await securityService.checkVulnerabilities('lodash');
+ * 
+ * if (securityInfo.hasVulnerabilities) {
+ *   console.log(`Found ${securityInfo.vulnerabilities.length} vulnerabilities`);
+ *   console.log(`Overall severity: ${securityInfo.severity}`);
+ *   
+ *   securityInfo.vulnerabilities.forEach(vuln => {
+ *     console.log(`- ${vuln.title} (${vuln.severity})`);
+ *     console.log(`  ${vuln.overview}`);
+ *     console.log(`  Fix: ${vuln.recommendation}`);
+ *   });
+ * }
+ * 
+ * // Check specific version
+ * const versionSecurity = await securityService.checkVulnerabilities('lodash', '4.17.20');
+ * ```
  */
 export class SecurityService {
   private readonly ghAdvisoryUrl: string;
   private readonly osvUrl: string;
 
+  /**
+   * Creates a new SecurityService instance with configurable vulnerability database URLs.
+   * 
+   * @param ghAdvisoryUrl - GitHub Security Advisory API URL (default: URLS.GITHUB_ADVISORY_API)
+   * @param osvUrl - OSV (Open Source Vulnerabilities) API URL (default: URLS.OSV_API)
+   * 
+   * @example
+   * ```typescript
+   * // Use default endpoints
+   * const security = new SecurityService();
+   * 
+   * // Use custom endpoints (e.g., for enterprise)
+   * const enterpriseSecurity = new SecurityService(
+   *   'https://enterprise-github.com/api/advisories',
+   *   'https://custom-osv.company.com/v1'
+   * );
+   * ```
+   */
   constructor(
-    ghAdvisoryUrl: string = 'https://api.github.com/advisories',
-    osvUrl: string = 'https://api.osv.dev/v1'
+    ghAdvisoryUrl: string = URLS.GITHUB_ADVISORY_API,
+    osvUrl: string = URLS.OSV_API
   ) {
     this.ghAdvisoryUrl = ghAdvisoryUrl;
     this.osvUrl = osvUrl;
   }
 
   /**
-   * Check vulnerabilities for a specific package
+   * Checks for security vulnerabilities in a specific package across multiple databases.
+   * Queries both GitHub Security Advisory and OSV databases, then deduplicates and analyzes results.
+   * 
+   * @param packageName - Name of the npm package to check
+   * @param version - Specific version to check (optional, defaults to all versions)
+   * @returns Promise resolving to SecurityInfo with vulnerability details and overall assessment
+   * 
+   * @example
+   * ```typescript
+   * // Check latest version
+   * const security = await securityService.checkVulnerabilities('lodash');
+   * 
+   * // Check specific version
+   * const oldSecurity = await securityService.checkVulnerabilities('lodash', '4.17.20');
+   * 
+   * // Handle results
+   * if (security.hasVulnerabilities) {
+   *   console.log(`⚠️ ${security.vulnerabilities.length} vulnerabilities found`);
+   *   console.log(`Highest severity: ${security.severity}`);
+   *   
+   *   // Show critical vulnerabilities
+   *   const critical = security.vulnerabilities.filter(v => v.severity === 'critical');
+   *   if (critical.length > 0) {
+   *     console.log('🚨 Critical vulnerabilities:');
+   *     critical.forEach(vuln => {
+   *       console.log(`  - ${vuln.title}`);
+   *       console.log(`    ${vuln.recommendation}`);
+   *     });
+   *   }
+   * } else {
+   *   console.log('✅ No known vulnerabilities');
+   * }
+   * ```
    */
   async checkVulnerabilities(packageName: string, version?: string): Promise<SecurityInfo> {
     try {
@@ -53,13 +129,18 @@ export class SecurityService {
   }
 
   /**
-   * Check GitHub Security Advisory database
+   * Queries the GitHub Security Advisory database for vulnerabilities affecting the specified package.
+   * 
+   * @private
+   * @param packageName - Name of the npm package to check
+   * @param version - Specific version to check (optional)
+   * @returns Promise resolving to array of Vulnerability objects from GitHub Advisory
    */
   private async checkGitHubAdvisory(packageName: string, version?: string): Promise<Vulnerability[]> {
     try {
       // GitHub Advisory API query
       const params = new URLSearchParams({
-        ecosystem: 'npm',
+        ecosystem: NPM_ECOSYSTEM,
         affects: packageName,
       });
 
@@ -94,13 +175,18 @@ export class SecurityService {
   }
 
   /**
-   * Check OSV (Open Source Vulnerabilities) database
+   * Queries the OSV (Open Source Vulnerabilities) database for vulnerabilities affecting the specified package.
+   * 
+   * @private
+   * @param packageName - Name of the npm package to check
+   * @param version - Specific version to check (optional)
+   * @returns Promise resolving to array of Vulnerability objects from OSV database
    */
   private async checkOSVDatabase(packageName: string, version?: string): Promise<Vulnerability[]> {
     try {
       const query = {
         package: {
-          ecosystem: 'npm',
+          ecosystem: NPM_ECOSYSTEM,
           name: packageName,
         },
         ...(version && { version }),
@@ -135,7 +221,7 @@ export class SecurityService {
     const vulnerabilities = advisory.vulnerabilities || [];
     
     for (const vuln of vulnerabilities) {
-      const affected = vuln.package?.ecosystem === 'npm' && vuln.package?.name === packageName;
+      const affected = vuln.package?.ecosystem === NPM_ECOSYSTEM && vuln.package?.name === packageName;
       
       if (!affected) continue;
       
@@ -199,7 +285,7 @@ export class SecurityService {
       id: advisory.ghsa_id || advisory.id,
       title: advisory.summary || advisory.title,
       severity: this.mapSeverity(advisory.severity),
-      url: advisory.html_url || `https://github.com/advisories/${advisory.ghsa_id}`,
+      url: advisory.html_url || `${URLS.GITHUB_ADVISORIES_WEBSITE}/${advisory.ghsa_id}`,
       overview: advisory.description || advisory.summary,
       recommendation: this.extractRecommendation(advisory),
       versions: this.extractAffectedVersions(advisory),
@@ -366,6 +452,6 @@ export class SecurityService {
    * Build OSV vulnerability URL
    */
   private buildOSVUrl(id: string): string {
-    return `https://osv.dev/vulnerability/${id}`;
+    return `${URLS.OSV_WEBSITE}/${id}`;
   }
 }

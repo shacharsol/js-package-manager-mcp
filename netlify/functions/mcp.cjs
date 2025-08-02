@@ -1,5 +1,5 @@
 // Simple MCP server function for Netlify
-export const handler = async (event, context) => {
+exports.handler = async (event, context) => {
   // CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',

@@ -1,7 +1,10 @@
+# Netlify deployment configuration example
+# Copy this to netlify.toml and customize for your deployment
+
 [build]
   publish = "dist"
   functions = "netlify/functions"
-  command = "mkdir -p dist && echo 'API-only deployment - no static files needed' > dist/index.html"
+  command = "npm run build"
 
 [functions]
   node_bundler = "nft"
@@ -12,22 +15,22 @@
 # Function routes
 [[redirects]]
   from = "/mcp"
-  to = "/.netlify/functions/mcp"
+  to = "/.netlify/functions/npmplus-mcp"
   status = 200
 
 [[redirects]]
   from = "/health"
-  to = "/.netlify/functions/health"
+  to = "/.netlify/functions/npmplus-health"
   status = 200
 
 [[redirects]]
   from = "/analytics"
-  to = "/.netlify/functions/analytics"
+  to = "/.netlify/functions/npmplus-analytics"
   status = 200
 
 [[redirects]]
   from = "/api/analytics-data"
-  to = "/.netlify/functions/analytics?data=true"
+  to = "/.netlify/functions/npmplus-analytics?data=true"
   status = 200
 
 # Security headers

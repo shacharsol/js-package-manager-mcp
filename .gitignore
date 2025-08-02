@@ -54,8 +54,7 @@ private-config/
 *.admin.ts
 
 # Deployment files (user-specific, not shared)
-# netlify.toml - Keep in repo for automatic builds
-# netlify/ - Keep in repo for automatic builds  
-scripts/test-deployment.sh
+netlify.toml
 .netlify/
+scripts/test-deployment.sh
 package.user.json

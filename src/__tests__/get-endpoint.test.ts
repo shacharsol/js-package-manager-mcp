@@ -76,7 +76,7 @@ describe('MCP GET Endpoint Integration Tests', () => {
 
       expect(result.headers).toMatchObject({
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, User-Agent',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
       });
     });

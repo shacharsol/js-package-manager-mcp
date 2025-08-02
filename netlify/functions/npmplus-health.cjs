@@ -25,7 +25,7 @@ exports.handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         status: 'healthy',
-        service: 'npm-plus-mcp-server',
+        service: 'npmplus-mcp',
         timestamp: new Date().toISOString(),
         version: '1.0.0',
         endpoints: {
@@ -43,7 +43,7 @@ exports.handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         status: 'error',
-        service: 'npm-plus-mcp-server',
+        service: 'npmplus-mcp',
         timestamp: new Date().toISOString(),
         error: error.message
       })

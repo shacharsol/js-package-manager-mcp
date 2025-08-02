@@ -8,7 +8,7 @@
           "npmplus-mcp-server"
         ],
         "disabled": false,
-        "description": "NPM Plus - JavaScript package management with NPM, Yarn, and pnpm support"
+        "description": "NPM Plus - JavaScript package management via npx"
       }
     }
   }

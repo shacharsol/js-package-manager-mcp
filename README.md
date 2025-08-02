@@ -38,7 +38,7 @@
 ```json
 {
   "mcpServers": {
-    "javascript-package-manager": {
+    "npmplus-mcp": {
       "transport": "http",
       "url": "https://api.npmplus.dev/mcp"
     }
@@ -88,8 +88,7 @@ See [deployment/README.md](deployment/README.md) for detailed deployment instruc
 ```json
 {
   "mcpServers": {
-    "javascript-package-manager": {
-      "transport": "http",
+    "npmplus-mcp": {
       "transport": "http",
       "url": "https://api.npmplus.dev/mcp"
     }
@@ -97,7 +96,12 @@ See [deployment/README.md](deployment/README.md) for detailed deployment instruc
 }
 ```
 
-**Test:** Ask Claude *"Search for React testing libraries"*
+**How to use:**
+- Just ask naturally: *"Search for React testing libraries"*
+- Claude automatically detects and uses MCP tools
+- Look for tool use blocks in responses
+
+**Test:** *"What's the current version of React?"*
 </details>
 
 <details>
@@ -108,10 +112,27 @@ See [deployment/README.md](deployment/README.md) for detailed deployment instruc
 {
   "mcp": {
     "servers": {
-      "javascript-package-manager": {
+      "npmplus-mcp": {
         "transport": "http",
-        "transport": "http",
-      "url": "https://api.npmplus.dev/mcp"
+        "url": "https://api.npmplus.dev/mcp"
+      }
+    }
+  }
+}
+```
+
+**For npx installation (Recommended for local):**
+```json
+{
+  "mcp": {
+    "servers": {
+      "npmplus-mcp": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "npmplus-mcp-server"
+        ],
+        "disabled": false
       }
     }
   }
@@ -123,11 +144,12 @@ See [deployment/README.md](deployment/README.md) for detailed deployment instruc
 {
   "mcp": {
     "servers": {
-      "javascript-package-manager": {
+      "npmplus-mcp": {
         "command": "node",
         "args": [
-          "/path/to/javascript-package-manager/dist/index.js"
+          "./dist/index.js"
         ],
+        "cwd": "./",
         "disabled": false
       }
     }
@@ -135,7 +157,14 @@ See [deployment/README.md](deployment/README.md) for detailed deployment instruc
 }
 ```
 
-**Test:** *"Install express and cors packages"*
+**How to use:**
+- Natural language: *"Install express and cors packages"*
+- Cascade mode: *"Update all packages and fix breaking changes"*
+- Look for "🔧 Using npmplus-mcp" in activity bar
+
+**Test:** *"Show me popular authentication libraries"*
+
+See [Windsurf Usage Guide](docs/CURSOR_WINDSURF_USAGE.md#-windsurf-usage)
 </details>
 
 <details>
@@ -147,10 +176,9 @@ Add to your Cursor MCP configuration:
 {
   "mcp": {
     "servers": {
-      "javascript-package-manager": {
+      "npmplus-mcp": {
         "transport": "http",
-        "transport": "http",
-      "url": "https://api.npmplus.dev/mcp"
+        "url": "https://api.npmplus.dev/mcp"
       }
     }
   }
@@ -169,24 +197,50 @@ Available features:
 - Dependency management
 ```
 
+**How to use:**
+- Chat: *"Search for testing frameworks"*
+- Composer (Cmd+K): *"Find React animation libraries"*
+- Explicit: *"Use npmplus-mcp to check bundle sizes"*
+- Look for tool usage in sidebar
+
 **Test:** *"What's the bundle size of lodash?"*
+
+See [Cursor Usage Guide](docs/CURSOR_WINDSURF_USAGE.md#-cursor-usage)
 </details>
 
 <details>
 <summary><strong>📝 VS Code + 🧬 Cline</strong></summary>
 
-**Install MCP extension and configure:**
+**Method 1: Cline Extension Settings**
+Add to VS Code settings.json:
 ```json
 {
-  "mcp.servers": {
-    "javascript-package-manager": {
-      "transport": "http",
+  "cline.mcpServers": {
+    "npmplus-mcp": {
+      "command": "npx",
+      "args": ["-y", "npmplus-mcp-server"]
+    }
+  }
+}
+```
+
+**Method 2: Hosted Service**
+```json
+{
+  "cline.mcpServers": {
+    "npmplus-mcp": {
       "transport": "http",
       "url": "https://api.npmplus.dev/mcp"
     }
   }
 }
 ```
+
+**How to call MCP:**
+- Use `@npmplus-mcp` in Cline chat
+- Example: *"@npmplus-mcp search for express middleware"*
+
+See [VS Code & Cline Setup Guide](docs/VSCODE_CLINE_SETUP.md) for detailed instructions.
 </details>
 
 ## 🔧 Available Tools
@@ -239,11 +293,23 @@ npm run build
 npm start
 ```
 
-**Local MCP Configuration:**
+**Via npx (Recommended):**
 ```json
 {
   "mcpServers": {
-    "javascript-package-manager": {
+    "npmplus-mcp": {
+      "command": "npx",
+      "args": ["-y", "npmplus-mcp-server"]
+    }
+  }
+}
+```
+
+**Local development:**
+```json
+{
+  "mcpServers": {
+    "npmplus-mcp": {
       "command": "node",
       "args": ["./dist/index.js"],
       "cwd": "/path/to/js-package-manager-mcp"

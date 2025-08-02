@@ -32,7 +32,7 @@
     "ai-tools",
     "developer-tools"
   ],
-  "author": "Shachar Solomon (https://github.com/shacharsol)",
+  "author": "Shachar Solomon <shachar@npmplus.dev> (https://github.com/shacharsol)",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -41,7 +41,7 @@
   "bugs": {
     "url": "https://github.com/shacharsol/js-package-manager-mcp/issues"
   },
-  "homepage": "https://github.com/shacharsol/js-package-manager-mcp",
+  "homepage": "https://npmplus.dev",
   "engines": {
     "node": ">=16.0.0"
   },

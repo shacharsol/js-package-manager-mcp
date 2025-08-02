@@ -96,12 +96,17 @@ if [[ $? -eq 0 ]]; then
         echo "❌ FAILED"
     fi
     
-    # Test MCP endpoint
+    # Test MCP endpoint with proper POST request
     echo -n "MCP endpoint: "
-    if curl -s -f https://api.npmplus.dev/mcp > /dev/null; then
+    response=$(curl -s -X POST https://api.npmplus.dev/mcp \
+        -H "Content-Type: application/json" \
+        -d '{"method":"initialize","params":{}}')
+    
+    if echo "$response" | grep -q "protocolVersion"; then
         echo "✅ OK"
     else
         echo "❌ FAILED"
+        echo "Response: $response"
     fi
     
     echo ""

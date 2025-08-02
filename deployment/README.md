@@ -11,6 +11,16 @@ NPM Plus is available as a hosted service at `https://api.npmplus.dev/mcp` for e
 - 🏢 **Enterprise**: Deploy behind your corporate firewall
 - 🌍 **Regional**: Deploy closer to your location for lower latency
 
+## 🔐 Security Note
+
+**The hosted service at `https://api.npmplus.dev/mcp` is production infrastructure.** 
+
+- 🚫 **Contributors cannot deploy** to the production service
+- 🔒 **Only the maintainer** can trigger production deployments
+- ✅ **Your custom deployment** gives you full control
+
+This ensures the hosted service remains stable and secure for all users.
+
 ## Quick Setup (Automated):
 
 ```bash

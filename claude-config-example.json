@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "package-manager": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp-package-manager/dist/index.js"],
+      "env": {}
+    }
+  }
+}

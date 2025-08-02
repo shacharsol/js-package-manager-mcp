@@ -1,0 +1,12 @@
+{
+  "mcp": {
+    "servers": {
+      "javascript-package-manager": {
+        "command": "node",
+        "args": ["./dist/index.js"],
+        "cwd": "./",
+        "description": "JavaScript package management with NPM, Yarn, and pnpm support"
+      }
+    }
+  }
+}

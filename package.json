@@ -1,0 +1,71 @@
+{
+  "name": "mcp-package-manager",
+  "version": "1.0.0",
+  "description": "MCP server for JavaScript package management (NPM, Yarn, pnpm)",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "mcp-package-manager": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:netlify": "npm run build && npm run copy:netlify",
+    "copy:netlify": "mkdir -p netlify/functions && cp dist/netlify-adapter.js netlify/functions/mcp.js",
+    "dev": "tsx watch src/index.ts",
+    "dev:netlify": "netlify dev",
+    "start": "node dist/index.js",
+    "clean": "rimraf dist netlify",
+    "test": "jest",
+    "deploy:netlify": "netlify deploy --prod",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "npm",
+    "yarn",
+    "pnpm",
+    "package-manager",
+    "dependencies",
+    "security",
+    "vulnerabilities",
+    "bundle-size"
+  ],
+  "author": "MCP Package Manager Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/finsavvyai/js-package-manager-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/finsavvyai/js-package-manager-mcp/issues"
+  },
+  "homepage": "https://github.com/finsavvyai/js-package-manager-mcp#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "zod": "^3.22.4",
+    "execa": "^8.0.1",
+    "pacote": "^17.0.6",
+    "@yarnpkg/lockfile": "^1.1.0",
+    "yaml": "^2.3.4",
+    "node-cache": "^5.1.2",
+    "madge": "^6.1.0",
+    "p-limit": "^5.0.0",
+    "undici": "^6.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "@types/pacote": "^11.1.8",
+    "@types/yarnpkg__lockfile": "^1.1.9",
+    "@netlify/functions": "^2.4.0",
+    "netlify-cli": "^17.10.1",
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0",
+    "rimraf": "^5.0.5",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.11"
+  }
+}

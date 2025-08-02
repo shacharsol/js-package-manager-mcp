@@ -1,0 +1,23 @@
+# Cursor MCP Configuration
+# This project includes an MCP server for JavaScript package management
+
+## MCP Server Configuration
+The JavaScript Package Manager MCP server provides tools for:
+- Package search and installation
+- Security vulnerability scanning  
+- Bundle size analysis
+- Dependency management across npm/yarn/pnpm
+
+To use this MCP server in Cursor:
+1. Build the project: `npm run build`
+2. Configure in Cursor settings with:
+   - Command: `node`
+   - Args: `["./dist/index.js"]`
+   - Working directory: This project root
+
+## Available MCP Tools
+- search_packages: Search npm registry
+- install_packages/update_packages/remove_packages: Package management
+- audit_dependencies: Security scanning
+- check_bundle_size: Performance analysis
+- dependency_tree: Visualize dependencies

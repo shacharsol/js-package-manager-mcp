@@ -332,6 +332,30 @@ npm test
 npm run dev
 ```
 
+## 🚀 Version Management & Publishing
+
+```bash
+# Bump version only (patch/minor/major)
+npm run bump
+
+# Full production deployment (maintainer only)
+# - Interactive version bumping
+# - Automated npm publishing  
+# - Git tagging and pushing
+# - Netlify deployment
+# - Endpoint testing
+npm run deploy:production
+```
+
+**Production deployment includes:**
+- ✅ Prerequisites check (npm login, netlify login, clean git)
+- 📦 Interactive version bumping (patch/minor/major)
+- 🧪 Automated testing
+- 📤 NPM package publishing
+- 🏷️ Git tagging and pushing
+- 🌐 Netlify deployment
+- 🔍 Endpoint health checks
+
 ## 🏗️ Architecture
 
 **Built with modern tools:**

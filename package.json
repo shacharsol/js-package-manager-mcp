@@ -1,11 +1,11 @@
 {
-  "name": "mcp-package-manager",
+  "name": "npmplus-mcp-server",
   "version": "1.0.0",
-  "description": "MCP server for JavaScript package management (NPM, Yarn, pnpm)",
+  "description": "Free MCP server for AI-powered JavaScript package management - Works with Claude, Windsurf, Cursor",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "mcp-package-manager": "./dist/index.js"
+    "npmplus": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -29,18 +29,23 @@
     "dependencies",
     "security",
     "vulnerabilities",
-    "bundle-size"
+    "bundle-size",
+    "claude",
+    "windsurf",
+    "cursor",
+    "ai-tools",
+    "developer-tools"
   ],
-  "author": "MCP Package Manager Contributors",
+  "author": "Shachar Solomon <shachar@npmplus.dev> (https://github.com/shacharsol)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/finsavvyai/js-package-manager-mcp.git"
+    "url": "git+https://github.com/shacharsol/js-package-manager-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/finsavvyai/js-package-manager-mcp/issues"
+    "url": "https://github.com/shacharsol/js-package-manager-mcp/issues"
   },
-  "homepage": "https://github.com/finsavvyai/js-package-manager-mcp#readme",
+  "homepage": "https://npmplus.dev",
   "engines": {
     "node": ">=16.0.0"
   },

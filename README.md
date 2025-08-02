@@ -52,12 +52,12 @@ No installation required! Use our hosted MCP server:
 
 🌐 **Website**: [npmplus.dev](https://npmplus.dev)
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/finsavvyai/js-package-manager-mcp)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/shacharsol/js-package-manager-mcp)
 
 ### Option 2: Local Installation
 ```bash
 # Clone the repository
-git clone https://github.com/finsavvyai/js-package-manager-mcp.git
+git clone https://github.com/shacharsol/js-package-manager-mcp.git
 cd js-package-manager-mcp
 
 # Install dependencies
@@ -69,41 +69,166 @@ npm run build
 
 ## Configuration
 
-### For Claude Desktop
-
-Add to your Claude Desktop configuration file:
-
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+### Quick Start (Hosted Service)
+The fastest way to get started is using our hosted service. No installation required!
 
 ```json
 {
   "mcpServers": {
-    "package-manager": {
-      "command": "node",
-      "args": ["/path/to/mcp-package-manager/dist/index.js"],
-      "env": {}
+    "javascript-package-manager": {
+      "transport": "http",
+      "url": "https://api.npmplus.dev/.netlify/functions/mcp"
     }
   }
 }
 ```
 
-### For Multiple Editors (Windsurf, VS Code, Cursor, etc.)
+## Editor Setup Instructions
 
-This project includes configuration files for popular editors:
+### 🤖 Claude Desktop
 
-#### Quick Setup
-```bash
-# Run the automated setup script
-./setup-mcp.sh
+#### Step 1: Locate Configuration File
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+#### Step 2: Add Configuration
+Open the file in a text editor and add:
+
+```json
+{
+  "mcpServers": {
+    "javascript-package-manager": {
+      "transport": "http",
+      "url": "https://api.npmplus.dev/.netlify/functions/mcp"
+    }
+  }
+}
 ```
 
-#### Manual Configuration
+#### Step 3: Restart Claude Desktop
 
-**Windsurf**: Configuration in `.windsurfrc`
-**VS Code**: Configuration in `.vscode/settings.json`  
-**Cursor**: Configuration in `.cursorrules`
-**Cline**: Use the `mcp-config.json` file
+#### Step 4: Test
+Ask Claude: *"Search for React testing libraries"*
+
+---
+
+### 🌊 Windsurf
+
+#### Step 1: Create Configuration File
+In your project root, create a `.windsurfrc` file:
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "javascript-package-manager": {
+        "transport": "http",
+        "url": "https://api.npmplus.dev/.netlify/functions/mcp"
+      }
+    }
+  }
+}
+```
+
+#### Step 2: Reload Windsurf
+- Restart Windsurf or reload the window
+- The MCP server will be automatically loaded
+
+#### Step 3: Test
+Use the AI chat and ask: *"Install express and cors packages"*
+
+---
+
+### 🎯 Cursor
+
+#### Step 1: Open Cursor Settings
+- Go to Cursor → Settings → Extensions
+- Look for MCP or Model Context Protocol settings
+
+#### Step 2: Add Server Configuration
+Add this configuration:
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "javascript-package-manager": {
+        "transport": "http",
+        "url": "https://api.npmplus.dev/.netlify/functions/mcp"
+      }
+    }
+  }
+}
+```
+
+#### Alternative: .cursorrules Method
+Create a `.cursorrules` file in your project:
+
+```
+# NPM Plus MCP Server Configuration
+
+This project uses the NPM Plus MCP server for package management.
+
+Server URL: https://api.npmplus.dev/.netlify/functions/mcp
+
+Available commands:
+- Search for packages
+- Install/update/remove packages  
+- Security auditing
+- Bundle size analysis
+- Dependency management
+
+Ask me about JavaScript packages and I'll use the MCP server to help!
+```
+
+#### Step 3: Restart Cursor
+
+#### Step 4: Test
+Ask Cursor: *"What's the bundle size of lodash?"*
+
+---
+
+### 📝 VS Code
+
+#### Step 1: Install MCP Extension
+Search for and install an MCP extension from the VS Code marketplace.
+
+#### Step 2: Configure Extension
+Add this to your VS Code settings.json:
+
+```json
+{
+  "mcp.servers": {
+    "javascript-package-manager": {
+      "transport": "http",
+      "url": "https://api.npmplus.dev/.netlify/functions/mcp"
+    }
+  }
+}
+```
+
+#### Step 3: Reload VS Code
+
+---
+
+### 🧬 Cline
+
+#### Step 1: Configure MCP Servers
+In Cline's settings, add the server configuration:
+
+```json
+{
+  "transport": "http",
+  "url": "https://api.npmplus.dev/.netlify/functions/mcp"
+}
+```
+
+#### Step 2: Test
+Ask Cline to search for packages or analyze dependencies.
+
+## Local Installation (Advanced)
+
+For self-hosting or development:
 
 #### Universal MCP Configuration
 ```json
@@ -323,6 +448,10 @@ Contributions are welcome! Please:
 2. Create a feature branch
 3. Add tests for new functionality
 4. Submit a pull request
+
+## About
+
+Created by [Shachar Solomon](https://github.com/shacharsol) in 2025.
 
 ## License
 

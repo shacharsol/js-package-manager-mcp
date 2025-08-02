@@ -87,7 +87,7 @@ export class HttpClient {
   }
   
   async packagephobia(packageName: string): Promise<any> {
-    const url = `${URLS.PACKAGEPHOBIA_API}?p=${encodeURIComponent(packageName)}`;
+    const url = `${URLS.BUNDLEPHOBIA_API}?p=${encodeURIComponent(packageName)}`;
     return this.request(url);
   }
   

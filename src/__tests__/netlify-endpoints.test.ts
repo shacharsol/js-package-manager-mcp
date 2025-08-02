@@ -129,7 +129,7 @@ describe('Netlify Function Endpoints JSON Format Tests', () => {
         protocolVersion: '1.0.0',
         serverInfo: {
           name: 'npmplus-mcp',
-          version: '1.0.0'
+          version: '1.0.9'
         },
         capabilities: {
           tools: {}

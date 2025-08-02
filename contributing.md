@@ -1,186 +1,220 @@
-# Contributing to MCP Package Manager
+# Contributing to NPM Plus
 
-Thank you for your interest in contributing to the MCP Package Manager! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to NPM Plus! This document provides guidelines and information for contributors.
 
-## Code of Conduct
+## 🚀 Getting Started
 
-By participating in this project, you agree to be respectful and constructive in all interactions.
+### Prerequisites
 
-## How to Contribute
+- Node.js 16.0.0 or higher
+- npm, yarn, or pnpm
+- Git
 
-### Reporting Issues
+### Development Setup
 
-1. Check if the issue already exists
-2. Create a new issue with:
-   - Clear title and description
-   - Steps to reproduce
-   - Expected vs actual behavior
-   - System information (OS, Node version, package manager)
+1. **Fork and clone the repository**
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/js-package-manager-mcp.git
+   cd js-package-manager-mcp
+   ```
 
-### Suggesting Features
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-1. Check existing feature requests
-2. Open a discussion with:
-   - Use case description
-   - Proposed implementation approach
-   - Alternative solutions considered
+3. **Build the project**
+   ```bash
+   npm run build
+   ```
 
-### Pull Requests
+4. **Run tests**
+   ```bash
+   npm test
+   npm run test:deployment
+   ```
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature-name`
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass: `npm test`
-6. Commit with descriptive messages
-7. Push to your fork
-8. Open a pull request
+5. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
-## Development Setup
+## 🛠️ Development Workflow
+
+### Branch Naming
+
+- `feature/description` - New features
+- `fix/description` - Bug fixes  
+- `docs/description` - Documentation updates
+- `refactor/description` - Code refactoring
+- `test/description` - Test improvements
+
+### Commit Messages
+
+Use clear, descriptive commit messages:
+
+```
+feat: add bundle size analysis tool
+fix: handle edge case in dependency tree parsing
+docs: update editor setup instructions
+test: add security audit tool tests
+```
+
+### Code Style
+
+- **TypeScript**: Use strict type checking
+- **ESLint**: Follow configured linting rules
+- **Prettier**: Auto-format on save
+- **Comments**: Document complex logic and public APIs
+
+### Testing
+
+- **Unit tests**: Test individual functions and classes
+- **Integration tests**: Test tool interactions
+- **Deployment tests**: Validate production endpoints
 
 ```bash
-# Clone your fork
-git clone https://github.com/yourusername/mcp-package-manager.git
-cd mcp-package-manager
-
-# Install dependencies
-npm install
-
-# Run in development mode
-npm run dev
-
-# Run tests
+# Run all tests
 npm test
 
-# Build for production
-npm run build
+# Test specific file
+npm test -- search-tool.test.ts
+
+# Test deployment
+npm run test:deployment
 ```
 
-## Project Structure
+## 📝 Contributing Guidelines
 
-```
-src/
-├── index.ts           # Entry point
-├── server.ts          # MCP server setup
-├── tools/             # Tool implementations
-│   ├── search.ts      # Package search
-│   ├── install.ts     # Install/update/remove
-│   ├── security.ts    # Vulnerability scanning
-│   ├── analysis.ts    # Bundle size & dependencies
-│   └── management.ts  # Utilities
-├── utils/             # Shared utilities
-│   ├── cache.ts       # Caching layer
-│   ├── pm-detect.ts   # Package manager detection
-│   └── http-client.ts # HTTP requests
-└── __tests__/         # Test files
-```
+### Adding New Tools
 
-## Adding a New Tool
+1. **Create tool implementation** in `src/tools/`
+2. **Add Zod schema** for input validation
+3. **Write comprehensive tests**
+4. **Update tool registry** in main server file
+5. **Document in README**
 
-1. Create the tool handler in the appropriate file under `src/tools/`
-2. Define the input schema using Zod
-3. Implement the handler function
-4. Add the tool to the exports
-5. Add tests for the new tool
-6. Update documentation
-
-Example:
-
+**Example:**
 ```typescript
-// Define schema
-const MyToolSchema = z.object({
-  param: z.string().describe("Parameter description")
+// src/tools/my-tool.ts
+import { z } from 'zod';
+
+export const MyToolSchema = z.object({
+  packageName: z.string().min(1),
+  version: z.string().optional(),
 });
 
-// Implement handler
-async function handleMyTool(args: unknown) {
-  const input = MyToolSchema.parse(args);
+export async function myTool(args: z.infer<typeof MyToolSchema>) {
   // Implementation
-  return {
-    content: [{
-      type: "text",
-      text: "Result"
-    }]
-  };
 }
-
-// Export
-export const tools = [
-  {
-    name: "my_tool",
-    description: "Tool description",
-    inputSchema: MyToolSchema
-  }
-];
-
-export const handlers = new Map([
-  ["my_tool", handleMyTool]
-]);
 ```
 
-## Testing Guidelines
+### Security Considerations
 
-- Write unit tests for new functionality
-- Test error cases and edge conditions
-- Mock external API calls
-- Ensure tests are deterministic
-- Use descriptive test names
+- **Input validation**: Always use Zod schemas
+- **Subprocess execution**: Use `execa` for safe command execution
+- **No credentials**: Never store or log sensitive information
+- **Error handling**: Provide safe error messages
 
-Example test:
+### Performance Guidelines
 
-```typescript
-describe("MyTool", () => {
-  it("should handle valid input correctly", async () => {
-    const result = await handleMyTool({ param: "test" });
-    expect(result.content[0].text).toContain("expected output");
-  });
+- **Caching**: Use appropriate cache TTLs
+- **Rate limiting**: Respect API rate limits
+- **Batching**: Optimize for multiple operations
+- **Memory**: Monitor memory usage in long-running operations
 
-  it("should validate input schema", async () => {
-    await expect(handleMyTool({ invalid: true }))
-      .rejects.toThrow();
-  });
-});
-```
+## 🎯 Areas for Contribution
 
-## Code Style
+### High Priority
 
-- Use TypeScript for type safety
-- Follow existing code patterns
-- Keep functions focused and small
-- Use descriptive variable names
-- Add comments for complex logic
-- Handle errors gracefully
+- **Package manager support**: Add support for additional package managers
+- **Performance optimization**: Improve caching and parallel processing
+- **Error handling**: Enhanced error messages and recovery
+- **Documentation**: Tutorial videos and guides
 
-## API Integration Guidelines
+### Medium Priority
 
-When integrating with external APIs:
+- **Testing**: Increase test coverage
+- **Monitoring**: Add more analytics and metrics
+- **UI/UX**: Improve analytics dashboard
+- **Integrations**: Support for more AI editors
 
-1. Use the shared HTTP client
-2. Implement proper error handling
-3. Add caching where appropriate
-4. Respect rate limits
-5. Document API limitations
+### Low Priority
 
-## Documentation
+- **Refactoring**: Code cleanup and modernization
+- **Dependencies**: Update and optimize dependencies
+- **Automation**: CI/CD improvements
 
-- Update README.md for new features
-- Add JSDoc comments for functions
-- Include examples in documentation
-- Keep tool descriptions clear and concise
+## 🐛 Reporting Issues
 
-## Release Process
+### Bug Reports
 
-1. Update version in package.json
-2. Update CHANGELOG.md
-3. Create a pull request
-4. After merge, tag the release
-5. Publish to npm (maintainers only)
+Use the **Bug Report** template and include:
 
-## Questions?
+- **Environment**: OS, Node.js version, package manager
+- **Steps to reproduce**: Clear reproduction steps
+- **Expected behavior**: What should happen
+- **Actual behavior**: What actually happens
+- **Logs**: Relevant error messages or logs
 
-Feel free to:
-- Open an issue for questions
-- Start a discussion
-- Reach out to maintainers
+### Feature Requests
 
-Thank you for contributing!
+Use the **Feature Request** template and include:
+
+- **Problem description**: What problem does this solve?
+- **Proposed solution**: How should it work?
+- **Alternatives**: What alternatives did you consider?
+- **Use cases**: Who would benefit and how?
+
+## 🔍 Code Review Process
+
+### Review Checklist
+
+- [ ] **Functionality**: Does it work as intended?
+- [ ] **Tests**: Are tests comprehensive and passing?
+- [ ] **Documentation**: Is it properly documented?
+- [ ] **Performance**: Are there performance implications?
+- [ ] **Security**: Are there security considerations?
+- [ ] **Style**: Does it follow code style guidelines?
+
+### Review Timeline
+
+- **Initial review**: Within 48 hours
+- **Feedback incorporation**: Ongoing collaboration
+- **Final approval**: When all requirements are met
+
+## 📚 Resources
+
+### Documentation
+
+- [MCP SDK Documentation](https://modelcontextprotocol.io/)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [Zod Documentation](https://zod.dev/)
+
+### Tools
+
+- [NPM Plus Dashboard](https://npmplus.dev)
+- [API Health Check](https://api.npmplus.dev/health)
+- [Analytics](https://api.npmplus.dev/analytics)
+
+## 🎉 Recognition
+
+Contributors will be:
+
+- **Listed** in the contributors section
+- **Credited** in release notes for significant contributions
+- **Invited** to join the maintainer team for exceptional contributions
+
+## 📞 Getting Help
+
+- **GitHub Issues**: For bugs and feature requests
+- **GitHub Discussions**: For questions and general discussion
+- **Email**: [shachar@npmplus.dev](mailto:shachar@npmplus.dev) for private matters
+
+## 📄 License
+
+By contributing to NPM Plus, you agree that your contributions will be licensed under the MIT License.
+
+---
+
+Thank you for making NPM Plus better! 🚀

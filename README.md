@@ -1,458 +1,274 @@
-# JavaScript Package Manager MCP Server
+# NPM Plus - JavaScript Package Manager for AI
 
-A comprehensive MCP (Model Context Protocol) server for managing JavaScript packages across NPM, Yarn, and pnpm. This server provides AI assistants with powerful tools to search, install, analyze, and manage JavaScript dependencies.
+[![NPM Plus](https://img.shields.io/badge/NPM%20Plus-MCP%20Server-blue)](https://npmplus.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/shacharsol/js-package-manager-mcp)
 
-## Features
+> 🚀 **Production-ready MCP server for intelligent JavaScript package management**  
+> Works seamlessly with Claude, Windsurf, Cursor, VS Code, and any MCP-compatible AI editor.
 
-### 🔍 Package Search
-- Search npm registry with relevance scoring
-- View package metadata, keywords, and maintainers
-- Pagination support for large result sets
+## ✨ Features
 
-### 📦 Package Management
-- Install packages (with dev/global options)
-- Update packages to latest versions
-- Remove unwanted packages
-- Check for outdated dependencies
+### 🔍 **Smart Package Discovery**
+- Search npm registry with intelligent relevance scoring
+- View detailed package metadata, keywords, and maintainers
+- Pagination support for comprehensive results
 
-### 🔒 Security Tools
-- Audit dependencies for vulnerabilities
-- Auto-fix security issues (with force option)
-- Check specific packages for known vulnerabilities
-- Integration with GitHub Advisory Database
+### 📦 **Intelligent Package Management**
+- Install, update, and remove packages across NPM, Yarn, and pnpm
+- Support for dev dependencies, global packages, and version constraints
+- Automatic package manager detection
 
-### 📊 Analysis Tools
-- Visualize dependency trees
-- Check bundle sizes before installation
-- Analyze for circular dependencies
-- Track download statistics
-- Detect orphaned files
+### 🔒 **Security & Compliance**
+- Real-time vulnerability scanning using GitHub Advisory Database
+- Automated security fix suggestions and implementation
+- License compliance tracking and analysis
 
-### 📜 Management Utilities
-- List and analyze licenses
-- Clean package manager caches
-- Get detailed package information
-- Support for all major package managers
+### 📊 **Advanced Analytics**
+- Bundle size analysis before installation
+- Dependency tree visualization with circular dependency detection
+- Download statistics and popularity metrics
+- Orphaned file detection
 
-## Installation
+## 🚀 Quick Start
 
-### Option 1: Use Hosted Service (Recommended)
-No installation required! Use our hosted MCP server:
+### Hosted Service (Recommended)
+
+**No installation required!** Use our production-ready hosted service:
 
 ```json
 {
   "mcpServers": {
     "javascript-package-manager": {
-      "transport": "http", 
+      "transport": "http",
       "url": "https://api.npmplus.dev/mcp"
     }
   }
 }
 ```
 
-🌐 **Website**: [npmplus.dev](https://npmplus.dev)
+🌐 **Dashboard**: [npmplus.dev](https://npmplus.dev) | **API Health**: [api.npmplus.dev/health](https://api.npmplus.dev/health)
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/shacharsol/js-package-manager-mcp)
+## 🛠️ Editor Setup
 
-### Option 2: Local Installation
-```bash
-# Clone the repository
-git clone https://github.com/shacharsol/js-package-manager-mcp.git
-cd js-package-manager-mcp
+<details>
+<summary><strong>🤖 Claude Desktop</strong></summary>
 
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-```
-
-## Configuration
-
-### Quick Start (Hosted Service)
-The fastest way to get started is using our hosted service. No installation required!
-
-```json
-{
-  "mcpServers": {
-    "javascript-package-manager": {
-      "transport": "http",
-      "url": "https://api.npmplus.dev/.netlify/functions/mcp"
-    }
-  }
-}
-```
-
-## Editor Setup Instructions
-
-### 🤖 Claude Desktop
-
-#### Step 1: Locate Configuration File
+**Configuration File Location:**
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-#### Step 2: Add Configuration
-Open the file in a text editor and add:
-
+**Add this configuration:**
 ```json
 {
   "mcpServers": {
     "javascript-package-manager": {
       "transport": "http",
-      "url": "https://api.npmplus.dev/.netlify/functions/mcp"
+      "url": "https://api.npmplus.dev/mcp"
     }
   }
 }
 ```
 
-#### Step 3: Restart Claude Desktop
+**Test:** Ask Claude *"Search for React testing libraries"*
+</details>
 
-#### Step 4: Test
-Ask Claude: *"Search for React testing libraries"*
+<details>
+<summary><strong>🌊 Windsurf</strong></summary>
 
----
-
-### 🌊 Windsurf
-
-#### Step 1: Create Configuration File
-In your project root, create a `.windsurfrc` file:
-
+**Create `.windsurfrc` in your project root:**
 ```json
 {
   "mcp": {
     "servers": {
       "javascript-package-manager": {
         "transport": "http",
-        "url": "https://api.npmplus.dev/.netlify/functions/mcp"
+        "url": "https://api.npmplus.dev/mcp"
       }
     }
   }
 }
 ```
 
-#### Step 2: Reload Windsurf
-- Restart Windsurf or reload the window
-- The MCP server will be automatically loaded
+**Test:** *"Install express and cors packages"*
+</details>
 
-#### Step 3: Test
-Use the AI chat and ask: *"Install express and cors packages"*
+<details>
+<summary><strong>🎯 Cursor</strong></summary>
 
----
-
-### 🎯 Cursor
-
-#### Step 1: Open Cursor Settings
-- Go to Cursor → Settings → Extensions
-- Look for MCP or Model Context Protocol settings
-
-#### Step 2: Add Server Configuration
-Add this configuration:
-
+**Method 1: Cursor Settings**
+Add to your Cursor MCP configuration:
 ```json
 {
   "mcp": {
     "servers": {
       "javascript-package-manager": {
         "transport": "http",
-        "url": "https://api.npmplus.dev/.netlify/functions/mcp"
+        "url": "https://api.npmplus.dev/mcp"
       }
     }
   }
 }
 ```
 
-#### Alternative: .cursorrules Method
-Create a `.cursorrules` file in your project:
-
+**Method 2: .cursorrules File**
 ```
-# NPM Plus MCP Server Configuration
+# NPM Plus MCP Integration
+This project uses NPM Plus (https://api.npmplus.dev/mcp) for AI-powered package management.
 
-This project uses the NPM Plus MCP server for package management.
-
-Server URL: https://api.npmplus.dev/.netlify/functions/mcp
-
-Available commands:
-- Search for packages
-- Install/update/remove packages  
-- Security auditing
+Available features:
+- Package search and installation
+- Security vulnerability scanning  
 - Bundle size analysis
 - Dependency management
-
-Ask me about JavaScript packages and I'll use the MCP server to help!
 ```
 
-#### Step 3: Restart Cursor
+**Test:** *"What's the bundle size of lodash?"*
+</details>
 
-#### Step 4: Test
-Ask Cursor: *"What's the bundle size of lodash?"*
+<details>
+<summary><strong>📝 VS Code + 🧬 Cline</strong></summary>
 
----
-
-### 📝 VS Code
-
-#### Step 1: Install MCP Extension
-Search for and install an MCP extension from the VS Code marketplace.
-
-#### Step 2: Configure Extension
-Add this to your VS Code settings.json:
-
+**Install MCP extension and configure:**
 ```json
 {
   "mcp.servers": {
     "javascript-package-manager": {
       "transport": "http",
-      "url": "https://api.npmplus.dev/.netlify/functions/mcp"
+      "url": "https://api.npmplus.dev/mcp"
+    }
+  }
+}
+```
+</details>
+
+## 🔧 Available Tools
+
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `search_packages` | Search npm registry with advanced filtering | Find packages by functionality |
+| `package_info` | Get comprehensive package metadata | Research before installation |
+| `install_packages` | Install with dev/global options | Add dependencies |
+| `update_packages` | Update to latest versions | Maintenance |
+| `remove_packages` | Clean removal of packages | Cleanup |
+| `audit_dependencies` | Security vulnerability scanning | Security |
+| `check_bundle_size` | Analyze package size impact | Performance |
+| `dependency_tree` | Visualize dependency relationships | Architecture |
+| `list_licenses` | License compliance analysis | Legal |
+| `analyze_dependencies` | Detect circular deps and orphans | Code quality |
+
+## 💡 Usage Examples
+
+**Security-focused:**
+```
+"Check if lodash has any security vulnerabilities"
+"Audit all dependencies and suggest fixes"
+"Find packages with MIT licenses only"
+```
+
+**Performance-focused:**
+```  
+"What's the bundle size impact of adding moment.js?"
+"Show me lightweight alternatives to lodash"
+"Find circular dependencies in my project"
+```
+
+**Development workflow:**
+```
+"Install typescript as a dev dependency"
+"Update all outdated packages"
+"Search for React form validation libraries"
+```
+
+## 🏗️ Self-Hosting (Advanced)
+
+For enterprise or custom deployments:
+
+```bash
+git clone https://github.com/shacharsol/js-package-manager-mcp.git
+cd js-package-manager-mcp
+npm install
+npm run build
+npm start
+```
+
+**Local MCP Configuration:**
+```json
+{
+  "mcpServers": {
+    "javascript-package-manager": {
+      "command": "node",
+      "args": ["./dist/index.js"],
+      "cwd": "/path/to/js-package-manager-mcp"
     }
   }
 }
 ```
 
-#### Step 3: Reload VS Code
+## 🧪 Testing & Validation
+
+```bash
+# Test deployment health
+npm run test:deployment
+
+# Run unit tests  
+npm test
+
+# Development mode
+npm run dev
+```
+
+## 🏗️ Architecture
+
+**Built with modern tools:**
+- **TypeScript** - Type safety and developer experience
+- **MCP SDK** - Official Model Context Protocol implementation
+- **Zod** - Runtime type validation and parsing
+- **Execa** - Secure subprocess execution
+- **Pacote** - Official npm registry client
+- **Node-cache** - Intelligent response caching
+
+**Performance optimizations:**
+- ⚡ Intelligent caching with configurable TTLs
+- 🎯 Rate limiting to prevent API throttling  
+- 📦 Parallel operations for batch processing
+- 🪶 Optimized responses for AI context windows
+
+## 🔐 Security
+
+- ✅ Isolated subprocess execution
+- ✅ Input validation prevents injection attacks
+- ✅ Official vulnerability databases only
+- ✅ No credential storage or sensitive data handling
+- ✅ CORS-enabled for secure web integration
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md).
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Add** tests for new functionality
+4. **Commit** changes (`git commit -m 'Add amazing feature'`)
+5. **Push** to branch (`git push origin feature/amazing-feature`)
+6. **Open** a Pull Request
+
+## 📊 Analytics & Monitoring
+
+**Live Dashboard**: [api.npmplus.dev/analytics](https://api.npmplus.dev/analytics)
+
+Track usage patterns, popular tools, and performance metrics in real-time.
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+## 🙋‍♂️ About
+
+Created with ❤️ by [Shachar Solomon](https://github.com/shacharsol) in 2025.
+
+**Star this repo** if NPM Plus helps your AI development workflow!
 
 ---
 
-### 🧬 Cline
-
-#### Step 1: Configure MCP Servers
-In Cline's settings, add the server configuration:
-
-```json
-{
-  "transport": "http",
-  "url": "https://api.npmplus.dev/.netlify/functions/mcp"
-}
-```
-
-#### Step 2: Test
-Ask Cline to search for packages or analyze dependencies.
-
-## Local Installation (Advanced)
-
-For self-hosting or development:
-
-#### Universal MCP Configuration
-```json
-{
-  "mcp": {
-    "servers": {
-      "javascript-package-manager": {
-        "command": "node",
-        "args": ["./dist/index.js"],
-        "cwd": "/path/to/mcp-package-manager"
-      }
-    }
-  }
-}
-```
-
-## Available Tools
-
-### search_packages
-Search for packages in the npm registry.
-```
-Arguments:
-- query: Search query string
-- limit: Maximum results (1-100, default: 25)
-- from: Offset for pagination (default: 0)
-```
-
-### install_packages
-Install npm packages in a project.
-```
-Arguments:
-- packages: Array of package names (with optional versions)
-- cwd: Working directory (default: current)
-- dev: Install as dev dependencies (default: false)
-- global: Install globally (default: false)
-```
-
-### update_packages
-Update packages to their latest versions.
-```
-Arguments:
-- packages: Specific packages to update (optional)
-- cwd: Working directory (default: current)
-```
-
-### remove_packages
-Remove packages from a project.
-```
-Arguments:
-- packages: Array of package names to remove
-- cwd: Working directory (default: current)
-- global: Remove global packages (default: false)
-```
-
-### check_outdated
-Check for outdated packages.
-```
-Arguments:
-- cwd: Working directory (default: current)
-- global: Check global packages (default: false)
-```
-
-### audit_dependencies
-Audit project dependencies for vulnerabilities.
-```
-Arguments:
-- cwd: Working directory (default: current)
-- fix: Attempt to fix vulnerabilities (default: false)
-- force: Force fixes including breaking changes (default: false)
-- production: Only audit production dependencies (default: false)
-```
-
-### check_vulnerability
-Check a specific package for known vulnerabilities.
-```
-Arguments:
-- packageName: Package name to check
-- version: Specific version (optional)
-```
-
-### dependency_tree
-Display the dependency tree of a project.
-```
-Arguments:
-- cwd: Working directory (default: current)
-- depth: Maximum tree depth (0-10, default: 3)
-- production: Only show production dependencies (default: false)
-```
-
-### check_bundle_size
-Check the bundle size of a package.
-```
-Arguments:
-- packageName: Package name to analyze
-- version: Specific version (optional)
-```
-
-### analyze_dependencies
-Analyze project dependencies for issues.
-```
-Arguments:
-- cwd: Working directory (default: current)
-- circular: Check for circular dependencies (default: true)
-- orphans: Check for orphaned files (default: true)
-```
-
-### download_stats
-Get download statistics for a package.
-```
-Arguments:
-- packageName: Package name
-- period: Time period (last-day, last-week, last-month, last-year)
-```
-
-### list_licenses
-List licenses of all dependencies.
-```
-Arguments:
-- cwd: Working directory (default: current)
-- production: Only check production dependencies (default: false)
-- summary: Show summary of license types (default: true)
-```
-
-### check_license
-Check the license of a specific package.
-```
-Arguments:
-- packageName: Package name to check
-- version: Specific version (optional)
-```
-
-### clean_cache
-Clean the package manager cache.
-```
-Arguments:
-- cwd: Working directory (default: current)
-- global: Clean global cache (default: false)
-```
-
-### package_info
-Get detailed information about a package.
-```
-Arguments:
-- packageName: Package name
-- version: Specific version (optional)
-```
-
-## Usage Examples
-
-### With Claude Desktop
-
-Once configured, you can ask Claude:
-
-- "Search for React testing libraries"
-- "Check if lodash has any security vulnerabilities"
-- "What's the bundle size of moment.js?"
-- "Install typescript as a dev dependency"
-- "Show me all MIT licensed packages in this project"
-- "Find circular dependencies in my code"
-- "Update all packages to their latest versions"
-
-### Programmatic Usage
-
-```typescript
-import { createServer } from "./server.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-
-const server = await createServer();
-const transport = new StdioServerTransport();
-await server.connect(transport);
-```
-
-## Development
-
-```bash
-# Run in development mode
-npm run dev
-
-# Run tests
-npm test
-
-# Build for production
-npm run build
-
-# Clean build artifacts
-npm run clean
-```
-
-## Architecture
-
-The server is built with:
-- **TypeScript** for type safety
-- **MCP SDK** for protocol implementation
-- **Zod** for input validation
-- **Execa** for package manager command execution
-- **Node-cache** for response caching
-- **Pacote** for npm registry interactions
-
-## Performance Features
-
-- **Intelligent caching**: Reduces API calls with configurable TTLs
-- **Rate limiting**: Prevents API throttling with concurrent request limits
-- **Efficient token usage**: Concise responses optimized for AI context windows
-- **Parallel operations**: Batch processing for improved performance
-
-## Security Considerations
-
-- All package manager commands are executed in isolated processes
-- Input validation prevents command injection
-- Vulnerability data sourced from official databases
-- No credentials or sensitive data are stored
-
-## Contributing
-
-Contributions are welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Submit a pull request
-
-## About
-
-Created by [Shachar Solomon](https://github.com/shacharsol) in 2025.
-
-## License
-
-MIT License - see LICENSE file for details
+[![NPM Plus Analytics](https://api.npmplus.dev/analytics?badge=true)](https://api.npmplus.dev/analytics)

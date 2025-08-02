@@ -4,7 +4,7 @@
 
 ### Configuration Options
 
-**Option 1: Via Cursor Settings (Recommended)**
+**Option 1: NPX Installation (Recommended)**
 1. Open Cursor Settings (`Cmd+,` or `Ctrl+,`)
 2. Search for "MCP" 
 3. Add configuration:
@@ -19,6 +19,9 @@
   }
 }
 ```
+
+**🚨 Note about HTTP Transport:**
+Cursor's HTTP transport for MCP has known issues and may not work reliably. **NPX installation is strongly recommended** for Cursor users.
 
 **Option 2: Via .cursorrules file**
 Create `.cursorrules` in project root:
@@ -46,13 +49,20 @@ Cursor will automatically use MCP when it detects package-related queries:
 "Install typescript as dev dependency"
 ```
 
-#### 2. **Explicit MCP Invocation**
-To ensure MCP is used:
+#### 2. **Explicit MCP Invocation (Required in Non-Agent Mode)**
+Cursor often requires explicit prompting to use MCP tools:
 ```
 "Use npmplus-mcp to search for testing frameworks"
 "With the MCP server, check bundle size of moment"
 "Using NPM Plus, audit my dependencies"
+"Call the npmplus-mcp tools to find React libraries"
+"Invoke MCP to check package security"
 ```
+
+**💡 Cursor-Specific Tips:**
+- **Agent Mode**: Cursor is more likely to use MCP automatically
+- **Explicit Keywords**: Use "npmplus-mcp", "MCP", "call the tools"
+- **Package Context**: Mention "npm", "package", "dependencies" explicitly
 
 #### 3. **In Composer (Cmd+K)**
 ```
@@ -330,9 +340,31 @@ Windsurf: Use with cascade mode for migrations
 ## 🆘 Troubleshooting
 
 ### Cursor Issues
-1. **MCP not showing**: Check Settings → Extensions → MCP
-2. **No tool usage**: Try explicit invocation
-3. **Restart**: Cmd+Shift+P → "Reload Window"
+
+1. **MCP not auto-triggering**:
+   - **Solution**: Use explicit prompts: "Use npmplus-mcp to..."
+   - **Enable Agent Mode**: More likely to auto-trigger
+   - **Add keywords**: Include "npm", "package", "MCP" in your prompts
+
+2. **HTTP transport not working**:
+   - **Solution**: Switch to NPX installation (recommended)
+   - **Issue**: Cursor's HTTP MCP implementation is unreliable
+   - **Workaround**: Use explicit transport type if available
+
+3. **MCP not showing in settings**:
+   - Check Settings → Extensions → MCP
+   - Ensure Cursor version supports MCP
+   - Look for "Model Context Protocol" settings
+
+4. **No tool usage indicators**:
+   - Try explicit invocation: "Call npmplus-mcp tools"
+   - Check sidebar for tool execution logs
+   - Look for [Using tool_name] in responses
+
+5. **General troubleshooting**:
+   - Restart: Cmd+Shift+P → "Reload Window"
+   - Check extension logs in developer console
+   - Verify NPX installation: `npx -y npmplus-mcp-server --help`
 
 ### Windsurf Issues
 1. **Not detecting MCP**: Check .windsurfrc location

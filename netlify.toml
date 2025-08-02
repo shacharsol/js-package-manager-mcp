@@ -20,6 +20,16 @@
   to = "/.netlify/functions/health"
   status = 200
 
+[[redirects]]
+  from = "/analytics"
+  to = "/.netlify/functions/analytics"
+  status = 200
+
+[[redirects]]
+  from = "/api/analytics-data"
+  to = "/.netlify/functions/analytics/data"
+  status = 200
+
 # Security headers
 [[headers]]
   for = "/*"

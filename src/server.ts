@@ -1,5 +1,6 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import { analytics } from "./analytics.js";
 
 // Import tool modules that export their tool definitions and handlers
 import * as searchTools from "./tools/search-tools.js";
@@ -74,9 +75,21 @@ export async function createServer(): Promise<Server> {
         throw new Error(`Unknown tool: ${name}`);
       }
 
+      const startTime = Date.now();
       try {
-        return await handler(args);
+        const result = await handler(args);
+        const responseTime = Date.now() - startTime;
+        
+        // Track successful tool usage
+        analytics.trackToolUsage(name, true, responseTime);
+        
+        return result;
       } catch (error: any) {
+        const responseTime = Date.now() - startTime;
+        
+        // Track failed tool usage
+        analytics.trackToolUsage(name, false, responseTime, undefined, undefined, error);
+        
         if (error.name === "ZodError") {
           throw new Error(`Invalid arguments: ${error.message}`);
         }

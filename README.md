@@ -170,7 +170,7 @@ See [Windsurf Usage Guide](docs/CURSOR_WINDSURF_USAGE.md#-windsurf-usage)
 <details>
 <summary><strong>🎯 Cursor</strong></summary>
 
-**Method 1: NPX Installation (Recommended)**
+**NPX Installation (Recommended for Cursor)**
 Add to your Cursor MCP configuration:
 ```json
 {
@@ -183,18 +183,10 @@ Add to your Cursor MCP configuration:
 }
 ```
 
-**Method 2: Hosted Service**
-For the hosted version, add to your Cursor MCP configuration:
-```json
-{
-  "mcpServers": {
-    "npmplus-mcp": {
-      "transport": "http",
-      "url": "https://api.npmplus.dev/mcp"
-    }
-  }
-}
-```
+**⚠️ Cursor-Specific Notes:**
+- **HTTP transport may not work reliably** - use NPX installation
+- **Requires explicit prompts** in non-agent mode: "Use npmplus-mcp to..."
+- **Agent mode** increases auto-detection of MCP usage
 
 **Method 3: .cursorrules File**
 ```

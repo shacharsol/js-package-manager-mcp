@@ -29,11 +29,11 @@ export const SERVER_NAME = 'javascript-package-manager';
  * Supported package managers with their command-line names.
  * @constant {Record<string, PackageManagerType>}
  */
-export const PACKAGE_MANAGERS = {
+export const PACKAGE_MANAGERS = Object.freeze({
   NPM: 'npm',
   YARN: 'yarn', 
   PNPM: 'pnpm',
-} as const;
+} as const);
 
 /**
  * Package manager lock file names for automatic detection.
@@ -52,7 +52,7 @@ export const LOCK_FILES = [
  * External service URLs for package registry and analysis.
  * @constant {Record<string, string>}
  */
-export const URLS = {
+export const URLS = Object.freeze({
   // NPM Registry and API
   NPM_REGISTRY: 'https://registry.npmjs.org',
   NPM_API: 'https://api.npmjs.org',
@@ -66,7 +66,7 @@ export const URLS = {
   GITHUB_ADVISORIES_WEBSITE: 'https://github.com/advisories',
   OSV_API: 'https://api.osv.dev/v1',
   OSV_WEBSITE: 'https://osv.dev/vulnerability',
-} as const;
+} as const);
 
 // ==================== USER AGENT DETECTION ====================
 
@@ -75,7 +75,7 @@ export const URLS = {
  * Each pattern maps to a standardized editor name.
  * @constant {Array<{pattern: string, name: string}>}
  */
-export const EDITOR_PATTERNS = [
+export const EDITOR_PATTERNS = Object.freeze([
   { pattern: 'claude', name: 'claude' },
   { pattern: 'windsurf', name: 'windsurf' },
   { pattern: 'cursor', name: 'cursor' },
@@ -83,7 +83,7 @@ export const EDITOR_PATTERNS = [
   { pattern: 'cline', name: 'cline' },
   { pattern: 'vs code', name: 'vscode' },
   { pattern: 'visual studio code', name: 'vscode' },
-] as const;
+] as const);
 
 // ==================== SECURITY CONSTANTS ====================
 
@@ -92,6 +92,79 @@ export const EDITOR_PATTERNS = [
  * @constant {string}
  */
 export const NPM_ECOSYSTEM = 'npm';
+
+// ==================== TIMEOUT CONFIGURATIONS ====================
+
+/**
+ * Timeout configurations for various operations in milliseconds.
+ * @constant {Record<string, number>}
+ */
+export const DEFAULT_TIMEOUTS = {
+  PACKAGE_MANAGER: 60000,  // 60 seconds for package manager operations
+  HTTP_REQUEST: 30000,     // 30 seconds for HTTP requests
+  RATE_LIMIT_RETRY: 1000,  // 1 second retry delay for rate limiting
+} as const;
+
+// ==================== CACHE CONFIGURATIONS ====================
+
+/**
+ * Cache settings for various caching scenarios.
+ * @constant {Record<string, number>}
+ */
+export const CACHE_SETTINGS = {
+  DEFAULT_TTL: 600,      // 10 minutes default TTL
+  SHORT_TTL: 300,        // 5 minutes for volatile data
+  LONG_TTL: 3600,        // 1 hour for stable data
+  CHECK_PERIOD: 120,     // 2 minutes check period
+  MAX_KEYS: 1000,        // Maximum number of cache keys
+} as const;
+
+// ==================== HTTP CONFIGURATIONS ====================
+
+/**
+ * HTTP server and client configurations.
+ * @constant {Record<string, number | string>}
+ */
+export const HTTP_SETTINGS = {
+  DEFAULT_PORT: 3000,
+  RATE_LIMIT_CONCURRENT: 5,
+  USER_AGENT: `mcp-package-manager/${VERSION}`,
+} as const;
+
+// ==================== SEARCH QUALITY WEIGHTS ====================
+
+/**
+ * Quality weights for package search scoring.
+ * @constant {Record<string, number>}
+ */
+export const SEARCH_QUALITY_WEIGHTS = {
+  QUALITY: 0.9,      // Quality score weight
+  POPULARITY: 0.8,   // Popularity weight
+  MAINTENANCE: 0.7,  // Maintenance score weight
+} as const;
+
+// ==================== RATE LIMITING ====================
+
+/**
+ * Rate limiting configurations.
+ * @constant {Record<string, number>}
+ */
+export const RATE_LIMITING = {
+  REQUESTS_PER_HOUR: 1000,
+  WINDOW_MS: 60 * 60 * 1000,  // 1 hour in milliseconds
+} as const;
+
+// ==================== CORS HEADERS ====================
+
+/**
+ * Standard CORS headers for API responses.
+ * @constant {Record<string, string>}
+ */
+export const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+} as const;
 
 // ==================== HELPER FUNCTIONS ====================
 

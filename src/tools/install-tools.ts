@@ -1,29 +1,17 @@
-import { z } from "zod";
 import { execa } from "execa";
 import { detectPackageManager } from "../pm-detect.js";
-
-const InstallPackagesSchema = z.object({
-  packages: z.array(z.string()).describe("Array of package names (with optional versions)"),
-  cwd: z.string().default(process.cwd()).describe("Working directory"),
-  dev: z.boolean().default(false).describe("Install as dev dependencies"),
-  global: z.boolean().default(false).describe("Install globally")
-});
-
-const UpdatePackagesSchema = z.object({
-  packages: z.array(z.string()).optional().describe("Specific packages to update (optional)"),
-  cwd: z.string().default(process.cwd()).describe("Working directory")
-});
-
-const RemovePackagesSchema = z.object({
-  packages: z.array(z.string()).describe("Array of package names to remove"),
-  cwd: z.string().default(process.cwd()).describe("Working directory"),
-  global: z.boolean().default(false).describe("Remove global packages")
-});
-
-const CheckOutdatedSchema = z.object({
-  cwd: z.string().default(process.cwd()).describe("Working directory"),
-  global: z.boolean().default(false).describe("Check global packages")
-});
+import { 
+  InstallPackagesSchema, 
+  UpdatePackagesSchema, 
+  RemovePackagesSchema, 
+  CheckOutdatedSchema 
+} from "../validators/index.js";
+import { 
+  createSuccessResponse, 
+  createErrorResponse, 
+  withErrorHandling,
+  formatList 
+} from "../utils/index.js";
 
 // Export tools and handlers
 export const tools = [
@@ -76,24 +64,12 @@ async function handleInstallPackages(args: unknown) {
       cwd: input.cwd
     });
     
-    return {
-      content: [
-        {
-          type: "text",
-          text: `✅ Successfully installed packages: ${input.packages.join(', ')}\n\n${stdout}`
-        }
-      ]
-    };
-  } catch (error: any) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `❌ Failed to install packages: ${error.message}`
-        }
-      ],
-      isError: true
-    };
+    const packageList = formatList(input.packages);
+    return createSuccessResponse(
+      `✅ Successfully installed ${packageList}\n\n${stdout}`
+    );
+  } catch (error) {
+    return createErrorResponse(error, `Failed to install ${formatList(input.packages)}`);
   }
 }
 
@@ -112,24 +88,11 @@ async function handleUpdatePackages(args: unknown) {
       cwd: input.cwd
     });
     
-    return {
-      content: [
-        {
-          type: "text",
-          text: `✅ Successfully updated packages\n\n${stdout}`
-        }
-      ]
-    };
-  } catch (error: any) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `❌ Failed to update packages: ${error.message}`
-        }
-      ],
-      isError: true
-    };
+    const target = input.packages ? formatList(input.packages) : 'all packages';
+    return createSuccessResponse(`✅ Successfully updated ${target}\n\n${stdout}`);
+  } catch (error) {
+    const target = input.packages ? formatList(input.packages) : 'packages';
+    return createErrorResponse(error, `Failed to update ${target}`);
   }
 }
 
@@ -148,24 +111,12 @@ async function handleRemovePackages(args: unknown) {
       cwd: input.cwd
     });
     
-    return {
-      content: [
-        {
-          type: "text",
-          text: `✅ Successfully removed packages: ${input.packages.join(', ')}\n\n${stdout}`
-        }
-      ]
-    };
-  } catch (error: any) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `❌ Failed to remove packages: ${error.message}`
-        }
-      ],
-      isError: true
-    };
+    const packageList = formatList(input.packages);
+    return createSuccessResponse(
+      `✅ Successfully removed ${packageList}\n\n${stdout}`
+    );
+  } catch (error) {
+    return createErrorResponse(error, `Failed to remove ${formatList(input.packages)}`);
   }
 }
 
@@ -184,35 +135,13 @@ async function handleCheckOutdated(args: unknown) {
       cwd: input.cwd
     });
     
-    return {
-      content: [
-        {
-          type: "text",
-          text: `📊 Outdated packages:\n\n${stdout}`
-        }
-      ]
-    };
+    return createSuccessResponse(`📊 Outdated packages:\n\n${stdout}`);
   } catch (error: any) {
     // npm outdated returns exit code 1 when packages are outdated
     if (error.stdout) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `📊 Outdated packages:\n\n${error.stdout}`
-          }
-        ]
-      };
+      return createSuccessResponse(`📊 Outdated packages:\n\n${error.stdout}`);
     }
     
-    return {
-      content: [
-        {
-          type: "text",
-          text: `❌ Failed to check outdated packages: ${error.message}`
-        }
-      ],
-      isError: true
-    };
+    return createErrorResponse(error, 'Failed to check outdated packages');
   }
 }

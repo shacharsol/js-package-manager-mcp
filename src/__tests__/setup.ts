@@ -1,6 +1,7 @@
 /**
  * Jest test setup file
  */
+import { beforeAll, afterAll, beforeEach, afterEach, jest } from '@jest/globals';
 
 // Mock console methods to reduce noise in tests
 const originalConsole = global.console;
@@ -27,7 +28,7 @@ jest.setTimeout(30000);
 // Mock process.cwd() for consistent test environment
 const originalCwd = process.cwd;
 beforeEach(() => {
-  process.cwd = jest.fn().mockReturnValue('/tmp/test-project');
+  process.cwd = jest.fn(() => '/tmp/test-project') as any;
 });
 
 afterEach(() => {

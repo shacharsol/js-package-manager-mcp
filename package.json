@@ -9,15 +9,10 @@
   },
   "scripts": {
     "build": "tsc",
-    "build:netlify": "npm run build && npm run copy:netlify",
-    "copy:netlify": "echo 'Netlify functions already exist as JavaScript files'",
     "dev": "tsx watch src/index.ts",
-    "dev:netlify": "netlify dev",
     "start": "node dist/index.js",
-    "clean": "rimraf dist netlify",
+    "clean": "rimraf dist",
     "test": "jest",
-    "test:deployment": "./scripts/test-deployment.sh",
-    "deploy:netlify": "netlify deploy --prod",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "keywords": [
@@ -37,7 +32,7 @@
     "ai-tools",
     "developer-tools"
   ],
-  "author": "Shachar Solomon <shachar@npmplus.dev> (https://github.com/shacharsol)",
+  "author": "Shachar Solomon (https://github.com/shacharsol)",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -46,7 +41,7 @@
   "bugs": {
     "url": "https://github.com/shacharsol/js-package-manager-mcp/issues"
   },
-  "homepage": "https://npmplus.dev",
+  "homepage": "https://github.com/shacharsol/js-package-manager-mcp",
   "engines": {
     "node": ">=16.0.0"
   },

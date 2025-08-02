@@ -1,0 +1,5 @@
+# .github/CODEOWNERS
+# This file ensures only @shacharsol can approve PRs to protected branches like production
+
+# Give @shacharsol ownership of the whole repo (including /production)
+*       @shacharsol

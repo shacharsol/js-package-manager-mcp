@@ -2,15 +2,16 @@ import { createServer as createHttpServer } from "http";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { createServer as createMCPServer } from "./server.js";
+import { HTTP_SETTINGS, SERVER_NAME, VERSION, CORS_HEADERS } from "./constants.js";
 
-export async function createHTTPMCPServer(port: number = 3000): Promise<void> {
+export async function createHTTPMCPServer(port: number = HTTP_SETTINGS.DEFAULT_PORT): Promise<void> {
   const mcpServer = await createMCPServer();
   
   const httpServer = createHttpServer(async (req, res) => {
     // Enable CORS
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    Object.entries(CORS_HEADERS).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
     
     if (req.method === 'OPTIONS') {
       res.writeHead(200);
@@ -22,8 +23,8 @@ export async function createHTTPMCPServer(port: number = 3000): Promise<void> {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ 
         status: 'healthy',
-        server: 'javascript-package-manager',
-        version: '1.0.0',
+        server: SERVER_NAME,
+        version: VERSION,
         timestamp: new Date().toISOString()
       }));
       return;

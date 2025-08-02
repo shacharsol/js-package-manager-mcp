@@ -1,6 +1,7 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { analytics } from "./analytics.js";
+import { SERVER_NAME, VERSION } from "./constants.js";
 
 // Import tool modules that export their tool definitions and handlers
 import * as searchTools from "./tools/search-tools.js";
@@ -12,8 +13,8 @@ import * as managementTools from "./tools/management-tools.js";
 export async function createServer(): Promise<Server> {
   const server = new Server(
     {
-      name: "javascript-package-manager",
-      version: "1.0.0"
+      name: SERVER_NAME,
+      version: VERSION
     },
     {
       capabilities: {

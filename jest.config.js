@@ -1,17 +1,14 @@
 /** @type {import('jest').Config} */
 export default {
-  preset: 'ts-jest',
+  preset: 'ts-jest/presets/default-esm',
   extensionsToTreatAsEsm: ['.ts'],
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   transform: {
-    '^.+\\.tsx?$': 'ts-jest',
-  },
-  globals: {
-    'ts-jest': {
+    '^.+\\.tsx?$': ['ts-jest', {
       useESM: true,
-    },
+    }],
   },
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
@@ -42,6 +39,13 @@ export default {
   },
   setupFilesAfterEnv: [
     '<rootDir>/src/__tests__/setup.ts'
+  ],
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^execa$': '<rootDir>/src/__tests__/__mocks__/execa.js'
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(execa|strip-final-newline|npm-run-path|path-key|onetime|mimic-fn|human-signals|is-stream|merge-stream|signal-exit|get-stream|is-plain-obj|cross-spawn|@modelcontextprotocol|zod|p-limit|yocto-queue|undici)/)'
   ],
   testTimeout: 30000,
   maxWorkers: 4,

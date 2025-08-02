@@ -16,9 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Security Tools**: Vulnerability scanning and automated fix suggestions
 - **Analytics Tools**: Bundle size analysis, dependency trees, download stats
 - **License Management**: Compliance tracking and license analysis
-- **Hosted Service**: Production-ready deployment at api.npmplus.dev
+- **Self-hosting Support**: Easy deployment with Netlify and other platforms
 - **Multi-Editor Support**: Claude, Windsurf, Cursor, VS Code, Cline
-- **Real-time Dashboard**: Analytics and monitoring at npmplus.dev
+- **Optional Analytics**: Console-based logging for monitoring
 - **Comprehensive Testing**: Deployment validation and health checks
 
 #### Tools Included
@@ -56,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Infrastructure
 - **Production Deployment**: Netlify-hosted with global CDN
 - **Health Monitoring**: Real-time endpoint health checks
-- **Analytics Dashboard**: Usage metrics and performance monitoring
+- **Analytics Logging**: Console-based usage metrics and performance monitoring
 - **Automated Testing**: Continuous validation of all endpoints
 
 ### Technical Details
@@ -76,4 +76,4 @@ Stay tuned for upcoming features:
 - Performance optimizations
 - Extended analytics and insights
 
-For the latest updates, visit [npmplus.dev](https://npmplus.dev) or watch this repository.
+For the latest updates, watch this repository or check the [releases page](https://github.com/shacharsol/js-package-manager-mcp/releases).

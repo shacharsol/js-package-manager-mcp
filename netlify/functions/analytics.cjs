@@ -14,47 +14,46 @@ exports.handler = async (event, context) => {
     const path = event.path || event.rawUrl || '';
     const isDataRequest = path.includes('/data') || event.queryStringParameters?.data === 'true';
     
-    // Analytics data API - Simple mock data for now
+    // Analytics data API - Basic data for open source version
     if (event.httpMethod === 'GET' && isDataRequest) {
-      const mockData = {
-        period: "7 days",
-        totalCalls: 1247,
-        avgDailyCalls: 178,
-        successRate: 98,
-        avgResponseTime: 245,
-        topTools: {
-          "search_packages": 486,
-          "install_packages": 298,
-          "package_info": 156,
-          "update_packages": 134,
-          "check_outdated": 89,
-          "audit_dependencies": 84
-        },
-        editors: {
-          "claude": 648,
-          "windsurf": 351,
-          "cursor": 178,
-          "vscode": 70
-        },
-        dailyStats: {
-          "2024-01-15": { date: "2024-01-15", totalCalls: 189, successRate: 0.98 },
-          "2024-01-16": { date: "2024-01-16", totalCalls: 156, successRate: 0.97 },
-          "2024-01-17": { date: "2024-01-17", totalCalls: 203, successRate: 0.99 },
-          "2024-01-18": { date: "2024-01-18", totalCalls: 178, successRate: 0.98 },
-          "2024-01-19": { date: "2024-01-19", totalCalls: 167, successRate: 0.96 },
-          "2024-01-20": { date: "2024-01-20", totalCalls: 198, successRate: 0.99 },
-          "2024-01-21": { date: "2024-01-21", totalCalls: 156, successRate: 0.97 }
-        }
-      };
-      
-      return {
-        statusCode: 200,
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(mockData)
-      };
+      try {
+        // Dynamic import to avoid build issues with ES modules
+        const { analyticsService } = await import('../../src/services/AnalyticsService.js');
+        const analyticsData = await analyticsService.getAnalyticsSummary(7);
+        
+        return {
+          statusCode: 200,
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(analyticsData)
+        };
+      } catch (analyticsError) {
+        console.error('Analytics data error:', analyticsError);
+        
+        // Fallback data
+        const fallbackData = {
+          period: "7 days",
+          total_calls: 0,
+          avg_daily_calls: 0,
+          success_rate: 100,
+          avg_response_time: 0,
+          top_tools: {},
+          editors: {},
+          daily_stats: {},
+          message: 'Analytics unavailable in open source version'
+        };
+        
+        return {
+          statusCode: 200,
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(fallbackData)
+        };
+      }
     }
     
     // Analytics dashboard HTML (default)
@@ -144,7 +143,7 @@ exports.handler = async (event, context) => {
     <div class="dashboard">
         <div class="header">
             <h1>📊 NPM Plus Analytics Dashboard</h1>
-            <p>Real-time usage analytics for your MCP server</p>
+            <p>Basic analytics for NPM Plus MCP server (Admin features available separately)</p>
             <button class="refresh-btn" onclick="location.reload()">🔄 Refresh</button>
         </div>
         

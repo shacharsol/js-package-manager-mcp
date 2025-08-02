@@ -1,12 +1,7 @@
-import { z } from "zod";
 import { cache, CacheManager } from "../cache.js";
 import { httpClient } from "../http-client.js";
-
-const SearchPackagesSchema = z.object({
-  query: z.string().describe("Search query string"),
-  limit: z.number().min(1).max(100).default(25).describe("Maximum number of results"),
-  from: z.number().min(0).default(0).describe("Offset for pagination")
-});
+import { SearchPackagesSchema } from "../validators/index.js";
+import { createSuccessResponse, createErrorResponse, truncateText } from "../utils/index.js";
 
 // Export tools and handlers
 export const tools = [
@@ -28,14 +23,7 @@ async function handleSearchPackages(args: unknown) {
   const cacheKey = CacheManager.keys.searchResults(input.query, input.limit);
   const cached = await cache.get<any>(cacheKey);
   if (cached) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: formatSearchResults(cached, input.query)
-        }
-      ]
-    };
+    return createSuccessResponse(formatSearchResults(cached, input.query));
   }
   
   try {
@@ -47,24 +35,9 @@ async function handleSearchPackages(args: unknown) {
     // Cache for 5 minutes
     await cache.set(cacheKey, searchResults, 300);
     
-    return {
-      content: [
-        {
-          type: "text",
-          text: formatSearchResults(searchResults, input.query)
-        }
-      ]
-    };
+    return createSuccessResponse(formatSearchResults(searchResults, input.query));
   } catch (error: any) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `❌ Failed to search packages: ${error.message}`
-        }
-      ],
-      isError: true
-    };
+    return createErrorResponse(error, 'Failed to search packages');
   }
 }
 
@@ -82,7 +55,7 @@ function formatSearchResults(results: any, query: string): string {
     const pkg = item.package;
     output.push(`${index + 1}. 📦 **${pkg.name}**`);
     output.push(`   Version: ${pkg.version}`);
-    output.push(`   Description: ${pkg.description || 'No description'}`);
+    output.push(`   Description: ${truncateText(pkg.description || 'No description', 100)}`);
     output.push(`   Downloads: ${pkg.links?.npm ? '📊 Available' : 'N/A'}`);
     output.push("");
   });

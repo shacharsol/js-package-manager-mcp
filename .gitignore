@@ -45,3 +45,10 @@ temp/
 
 # OS files
 Thumbs.db
+
+# Admin-only files (not included in open source)
+admin/
+analytics-db/
+private-config/
+*.private.js
+*.admin.ts

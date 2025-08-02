@@ -247,16 +247,29 @@ export class SecurityService {
     // In production, use semver library for proper range matching
     const events = range.events || [];
     
+    let introduced: string | null = null;
+    let fixed: string | null = null;
+    
+    // Find introduced and fixed versions
     for (const event of events) {
-      if (event.introduced && this.compareVersions(version, event.introduced) >= 0) {
-        return true;
+      if (event.introduced) {
+        introduced = event.introduced;
       }
-      if (event.fixed && this.compareVersions(version, event.fixed) < 0) {
-        return true;
+      if (event.fixed) {
+        fixed = event.fixed;
       }
     }
     
-    return false;
+    // Check if version is in the vulnerable range
+    if (introduced && this.compareVersions(version, introduced) < 0) {
+      return false; // Before introduced version
+    }
+    
+    if (fixed && this.compareVersions(version, fixed) >= 0) {
+      return false; // After fixed version
+    }
+    
+    return true; // In vulnerable range
   }
 
   /**

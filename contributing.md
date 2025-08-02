@@ -193,9 +193,9 @@ Use the **Feature Request** template and include:
 
 ### Tools
 
-- [NPM Plus Dashboard](https://npmplus.dev)
-- [API Health Check](https://api.npmplus.dev/health)
-- [Analytics](https://api.npmplus.dev/analytics)
+- [GitHub Repository](https://github.com/shacharsol/js-package-manager-mcp)
+- [Issue Tracker](https://github.com/shacharsol/js-package-manager-mcp/issues)
+- [Discussions](https://github.com/shacharsol/js-package-manager-mcp/discussions)
 
 ## 🎉 Recognition
 
@@ -209,7 +209,7 @@ Contributors will be:
 
 - **GitHub Issues**: For bugs and feature requests
 - **GitHub Discussions**: For questions and general discussion
-- **Email**: [shachar@npmplus.dev](mailto:shachar@npmplus.dev) for private matters
+- **Email**: [shacharsol@gmail.com](mailto:shacharsol@gmail.com) for private matters
 
 ## 📄 License
 

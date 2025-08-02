@@ -1,5 +1,5 @@
 import pacote from 'pacote';
-import { fetch } from 'undici';
+import { fetch, RequestInit, Response } from 'undici';
 import { Package, DownloadStats, BundleSize, PackageSearchResult } from '../models/Package.js';
 import { URLS } from '../constants.js';
 

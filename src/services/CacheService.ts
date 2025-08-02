@@ -1,5 +1,6 @@
 import NodeCache from 'node-cache';
 import { CacheMetrics } from '../models/Analytics.js';
+import { CACHE_SETTINGS } from '../constants.js';
 
 /**
  * Service for caching responses to improve performance and reduce external API calls.
@@ -59,9 +60,9 @@ export class CacheService {
     maxKeys?: number;
   }) {
     this.cache = new NodeCache({
-      stdTTL: options?.stdTTL || 600, // 10 minutes default
-      checkperiod: options?.checkperiod || 120, // Check for expired keys every 2 minutes
-      maxKeys: options?.maxKeys || 1000,
+      stdTTL: options?.stdTTL || CACHE_SETTINGS.DEFAULT_TTL,
+      checkperiod: options?.checkperiod || CACHE_SETTINGS.CHECK_PERIOD,
+      maxKeys: options?.maxKeys || CACHE_SETTINGS.MAX_KEYS,
       useClones: false, // Better performance, but be careful with object mutations
     });
 
@@ -134,7 +135,11 @@ export class CacheService {
    * ```
    */
   async set(key: string, value: unknown, ttl?: number): Promise<void> {
-    this.cache.set(key, value, ttl || 0);
+    if (ttl !== undefined) {
+      this.cache.set(key, value, ttl);
+    } else {
+      this.cache.set(key, value);
+    }
     this.metrics.sets++;
   }
 
@@ -239,10 +244,16 @@ export class CacheService {
   }
 
   /**
-   * Get TTL for key
+   * Get TTL for key (remaining time in seconds)
    */
   async getTTL(key: string): Promise<number> {
-    return this.cache.getTtl(key);
+    const expireTime = this.cache.getTtl(key);
+    if (expireTime === 0 || expireTime === undefined) {
+      return 0; // Key doesn't exist or has no TTL
+    }
+    const now = Date.now();
+    const remainingMs = expireTime - now;
+    return Math.max(0, Math.floor(remainingMs / 1000)); // Convert to seconds
   }
 
   /**
@@ -251,7 +262,7 @@ export class CacheService {
   static createKey(...parts: (string | number | boolean)[]): string {
     return parts
       .map(part => String(part))
-      .map(part => part.replace(/[^a-zA-Z0-9._-]/g, '_'))
+      .map(part => part.replace(/[^a-zA-Z0-9._@-]/g, '_')) // Allow @ symbol
       .join(':');
   }
 

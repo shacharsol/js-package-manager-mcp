@@ -1,7 +1,8 @@
 [build]
   publish = "dist"
-  functions = "netlify/functions"
+  functions = "netlify/functions" 
   command = "npm run build && mkdir -p dist && echo 'API-only deployment - no static files needed' > dist/index.html"
+  ignore = "exit 1"  # Prevent automatic builds - only manual deploys allowed
 
 [functions]
   node_bundler = "nft"

@@ -20,9 +20,6 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // Import constants
-    const { VERSION } = await import('../../dist/constants.js');
-    
     return {
       statusCode: 200,
       headers,
@@ -30,11 +27,11 @@ exports.handler = async (event, context) => {
         status: 'healthy',
         service: 'npm-plus-mcp-server',
         timestamp: new Date().toISOString(),
-        version: VERSION,
+        version: '1.0.0',
         endpoints: {
-          mcp: '/.netlify/functions/mcp',
-          health: '/.netlify/functions/health',
-          analytics: '/.netlify/functions/analytics'
+          mcp: '/.netlify/functions/npmplus-mcp',
+          health: '/.netlify/functions/npmplus-health',
+          analytics: '/.netlify/functions/npmplus-analytics'
         }
       })
     };

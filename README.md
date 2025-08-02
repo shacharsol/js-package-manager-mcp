@@ -67,9 +67,11 @@ npm start
 # Customize the deployment URLs
 nano scripts/test-deployment.sh
 
-# Deploy (example for Netlify)
+# Deploy to your own infrastructure
 npm run deploy:netlify
 ```
+
+> **🔒 Security Note**: The production service at `api.npmplus.dev` has automatic deployments disabled. Only the maintainer can deploy to production using `npm run deploy:production`.
 
 See [deployment/README.md](deployment/README.md) for detailed deployment instructions.
 

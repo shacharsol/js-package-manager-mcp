@@ -1,8 +1,11 @@
+# Disable automatic builds for security - only maintainer can deploy
 [build]
   publish = "dist"
-  functions = "netlify/functions" 
-  command = "false"  # Always fail automatic builds
-  ignore = "true"    # Always ignore all changes
+  functions = "netlify/functions"
+  ignore = """
+    # Always ignore all changes - manual deployment only
+    exit 0
+  """
 
 [functions]
   node_bundler = "nft"

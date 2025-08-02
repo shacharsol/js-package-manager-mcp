@@ -13,22 +13,22 @@
 # Function routes
 [[redirects]]
   from = "/mcp"
-  to = "/.netlify/functions/mcp"
+  to = "/.netlify/functions/npmplus-mcp"
   status = 200
 
 [[redirects]]
   from = "/health"
-  to = "/.netlify/functions/health"
+  to = "/.netlify/functions/npmplus-health"
   status = 200
 
 [[redirects]]
   from = "/analytics"
-  to = "/.netlify/functions/analytics"
+  to = "/.netlify/functions/npmplus-analytics"
   status = 200
 
 [[redirects]]
   from = "/api/analytics-data"
-  to = "/.netlify/functions/analytics?data=true"
+  to = "/.netlify/functions/npmplus-analytics?data=true"
   status = 200
 
 # Security headers

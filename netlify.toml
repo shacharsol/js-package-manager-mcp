@@ -1,7 +1,7 @@
 [build]
   publish = "public"
   functions = "netlify/functions"
-  command = "echo 'Using pre-built functions'"
+  command = "npm run build:netlify"
 
 [functions]
   external_node_modules = ["@modelcontextprotocol/sdk", "zod", "execa"]
@@ -27,7 +27,7 @@
 
 [[redirects]]
   from = "/api/analytics-data"
-  to = "/.netlify/functions/analytics/data"
+  to = "/.netlify/functions/analytics?data=true"
   status = 200
 
 # Security headers

@@ -2,6 +2,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { analytics } from "./analytics.js";
 import { SERVER_NAME, VERSION } from "./constants.js";
+import { convertToolSchema } from "./utils/schema-converter.js";
 
 // Import tool modules that export their tool definitions and handlers
 import * as searchTools from "./tools/search-tools.js";
@@ -51,11 +52,7 @@ export async function createServer(): Promise<Server> {
       }
       
       return {
-        tools: allTools.map(tool => ({
-          name: tool.name,
-          description: tool.description,
-          inputSchema: tool.inputSchema
-        }))
+        tools: allTools.map(tool => convertToolSchema(tool))
       };
     }
   );

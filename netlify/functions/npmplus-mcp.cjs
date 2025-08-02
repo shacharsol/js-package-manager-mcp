@@ -9,10 +9,21 @@ const execAsync = util.promisify(exec);
 exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, User-Agent',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
   };
+
+  // Log request details for debugging (only in development)
+  console.log('MCP Request:', {
+    method: event.httpMethod,
+    headers: event.headers,
+    body: event.body ? event.body.substring(0, 200) : null,
+    userAgent: event.headers['user-agent'] || event.headers['User-Agent']
+  });
 
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {

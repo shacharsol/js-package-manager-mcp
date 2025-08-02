@@ -1,0 +1,22 @@
+[build]
+  publish = "dist"
+  functions = "netlify/functions"
+  command = "npm run build"
+
+[functions]
+  node_bundler = "nft"
+
+[[redirects]]
+  from = "/mcp"
+  to = "/.netlify/functions/npmplus-mcp"
+  status = 200
+
+[[redirects]]
+  from = "/health"
+  to = "/.netlify/functions/npmplus-health"
+  status = 200
+
+[[redirects]]
+  from = "/analytics"
+  to = "/.netlify/functions/npmplus-analytics"
+  status = 200

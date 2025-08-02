@@ -16,6 +16,7 @@
     "start": "node dist/index.js",
     "clean": "rimraf dist netlify",
     "test": "jest",
+    "test:deployment": "./scripts/test-deployment.sh",
     "deploy:netlify": "netlify deploy --prod",
     "prepublishOnly": "npm run clean && npm run build"
   },

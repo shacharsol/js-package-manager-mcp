@@ -353,7 +353,7 @@ describe('Netlify Function Endpoints JSON Format Tests', () => {
       });
     });
 
-    it('should reject non-POST methods with JSON error', async () => {
+    it('should handle GET requests for service discovery', async () => {
       if (!mcpHandler) {
         console.warn('MCP handler not available for testing');
         return;
@@ -361,6 +361,33 @@ describe('Netlify Function Endpoints JSON Format Tests', () => {
 
       const event = {
         httpMethod: 'GET',
+        body: null,
+        headers: {}
+      };
+
+      const result = await mcpHandler(event, mockContext);
+
+      expect(result.statusCode).toBe(200);
+      expect(result.headers['Content-Type']).toBe('application/json');
+
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody).toMatchObject({
+        name: "npmplus-mcp",
+        version: expect.any(String),
+        description: expect.any(String),
+        capabilities: expect.any(Object),
+        endpoints: expect.any(Object)
+      });
+    });
+
+    it('should reject non-GET/POST methods with JSON error', async () => {
+      if (!mcpHandler) {
+        console.warn('MCP handler not available for testing');
+        return;
+      }
+
+      const event = {
+        httpMethod: 'PUT',
         body: null,
         headers: {}
       };
@@ -528,11 +555,11 @@ describe('Netlify Function Endpoints JSON Format Tests', () => {
   });
 
   describe('JSON Response Validation', () => {
-    it('should ensure all endpoints return valid JSON', async () => {
+    it('should ensure all endpoints return valid JSON for appropriate requests', async () => {
       const testEndpoints = [
-        { handler: mcpHandler, name: 'MCP' },
-        { handler: healthHandler, name: 'Health' },
-        { handler: analyticsHandler, name: 'Analytics' }
+        { handler: mcpHandler, name: 'MCP', expectJSON: true },
+        { handler: healthHandler, name: 'Health', expectJSON: true },
+        { handler: analyticsHandler, name: 'Analytics', expectJSON: false } // Analytics returns HTML by default
       ];
 
       for (const endpoint of testEndpoints) {
@@ -550,12 +577,14 @@ describe('Netlify Function Endpoints JSON Format Tests', () => {
           expect(result).toHaveProperty('headers');
           expect(result).toHaveProperty('body');
           
-          // Validate that body is valid JSON
-          expect(() => JSON.parse(result.body)).not.toThrow();
+          // Validate that body is valid JSON for endpoints that should return JSON
+          if (endpoint.expectJSON) {
+            expect(() => JSON.parse(result.body)).not.toThrow();
+            expect(result.headers['Content-Type']).toBe('application/json');
+          }
           
           // Validate headers include Content-Type
           expect(result.headers).toHaveProperty('Content-Type');
-          expect(result.headers['Content-Type']).toBe('application/json');
           
         } catch (error) {
           console.warn(`Endpoint ${endpoint.name} test skipped:`, error);

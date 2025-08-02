@@ -63,7 +63,10 @@ if [ $? -eq 0 ]; then
     echo "4. Deploy and get your MCP server URL!"
     echo ""
     echo "🔗 Your hosted MCP server will be available at:"
-    echo "   https://js-package-manager-mcp.netlify.app/.netlify/functions/mcp"
+    echo "   https://api.npmplus.dev/mcp"
+    echo ""
+    echo "🌐 Main website will be at:"
+    echo "   https://npmplus.dev"
 else
     echo "❌ Failed to push to repository. Please check your GitHub access."
 fi

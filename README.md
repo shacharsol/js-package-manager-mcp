@@ -37,18 +37,20 @@ A comprehensive MCP (Model Context Protocol) server for managing JavaScript pack
 ## Installation
 
 ### Option 1: Use Hosted Service (Recommended)
-No installation required! Use our hosted MCP server on Netlify:
+No installation required! Use our hosted MCP server:
 
 ```json
 {
   "mcpServers": {
     "javascript-package-manager": {
       "transport": "http", 
-      "url": "https://js-package-manager-mcp.netlify.app/.netlify/functions/mcp"
+      "url": "https://api.npmplus.dev/mcp"
     }
   }
 }
 ```
+
+🌐 **Website**: [npmplus.dev](https://npmplus.dev)
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/finsavvyai/js-package-manager-mcp)
 

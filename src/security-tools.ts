@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { execa } from "execa";
-import { detectPackageManager, getAuditCommand } from "./pm-detect.js";
 import { httpClient } from "./http-client.js";
+import { detectPackageManager, getAuditCommand } from "./pm-detect.js";
+import { URLS, NPM_ECOSYSTEM } from "./constants.js";
 import { cache, CacheManager } from "./cache.js";
 import { readFile } from "fs/promises";
 import { join } from "path";
@@ -153,7 +154,7 @@ async function handleVulnerabilityCheck(args: unknown) {
     
     // Check GitHub Advisory Database
     const advisories = await httpClient.request<any[]>(
-      `https://api.github.com/advisories?ecosystem=npm&package=${input.packageName}`,
+      `${URLS.GITHUB_ADVISORY_API}?ecosystem=${NPM_ECOSYSTEM}&package=${input.packageName}`,
       {
         headers: {
           "Accept": "application/vnd.github+json"

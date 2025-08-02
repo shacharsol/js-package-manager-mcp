@@ -4,6 +4,10 @@ import { readFile, readdir } from "fs/promises";
 import { join } from "path";
 import { detectPackageManager } from "../pm-detect.js";
 import { httpClient } from "../http-client.js";
+import { CacheService } from '../services/CacheService.js';
+import { PackageService } from '../services/PackageService.js';
+import { PackageManagerService } from '../services/PackageManagerService.js';
+import { URLS } from '../constants.js';
 
 const ListLicensesSchema = z.object({
   cwd: z.string().default(process.cwd()).describe("Working directory"),
@@ -322,7 +326,7 @@ async function handlePackageInfo(args: unknown) {
     if (versionData.bugs?.url) {
       output.push(`  Issues: ${versionData.bugs.url}`);
     }
-    output.push(`  NPM: https://www.npmjs.com/package/${input.packageName}`);
+    output.push(`  NPM: ${URLS.NPM_WEBSITE}/package/${input.packageName}`);
     
     // Time info
     if (packageInfo.time?.[version]) {

@@ -1,7 +1,11 @@
 import { createHash } from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
+import { USER_AGENT_IDENTIFIERS } from './constants';
 
+/**
+ * Represents a single usage metric for a tool invocation.
+ */
 interface UsageMetric {
   timestamp: string;
   toolName: string;
@@ -13,6 +17,9 @@ interface UsageMetric {
   errorType?: string;
 }
 
+/**
+ * Aggregated daily statistics for tool usage and editor breakdown.
+ */
 interface DailyStats {
   date: string;
   totalCalls: number;
@@ -23,6 +30,9 @@ interface DailyStats {
   avgResponseTime: number;
 }
 
+/**
+ * Tracks analytics for tool usage, editor breakdown, and error rates.
+ */
 class AnalyticsTracker {
   private logFile: string;
   private statsFile: string;
@@ -35,6 +45,9 @@ class AnalyticsTracker {
     this.ensureLogDir();
   }
 
+  /**
+   * Ensure the log directory exists for storing analytics files.
+   */
   private async ensureLogDir() {
     try {
       await fs.mkdir(path.dirname(this.logFile), { recursive: true });
@@ -43,6 +56,11 @@ class AnalyticsTracker {
     }
   }
 
+  /**
+   * Hash an IP address with a salt for anonymized tracking.
+   * @param ip - The client IP address.
+   * @returns A hashed string representing the IP.
+   */
   private hashIP(ip: string): string {
     return createHash('sha256')
       .update(ip + this.salt)
@@ -50,18 +68,27 @@ class AnalyticsTracker {
       .substring(0, 16);
   }
 
+  /**
+   * Detect the editor type from the user agent string.
+   * @param userAgent - The user agent string to inspect.
+   * @returns The detected editor type or 'unknown'.
+   */
   private detectEditor(userAgent?: string): string {
     if (!userAgent) return 'unknown';
-    
     const ua = userAgent.toLowerCase();
-    if (ua.includes('claude')) return 'claude';
-    if (ua.includes('windsurf')) return 'windsurf';  
-    if (ua.includes('cursor')) return 'cursor';
-    if (ua.includes('vscode')) return 'vscode';
-    if (ua.includes('cline')) return 'cline';
-    return 'unknown';
+    const found = USER_AGENT_IDENTIFIERS.find(id => ua.includes(id));
+    return found || 'unknown';
   }
 
+  /**
+   * Track a tool usage event and update logs and daily stats.
+   * @param toolName - The name of the tool invoked.
+   * @param success - Whether the tool invocation was successful.
+   * @param responseTime - The response time in milliseconds.
+   * @param clientIP - The client IP address (optional).
+   * @param userAgent - The user agent string (optional).
+   * @param error - The error object if the invocation failed (optional).
+   */
   async trackToolUsage(
     toolName: string,
     success: boolean,
@@ -94,6 +121,10 @@ class AnalyticsTracker {
     }
   }
 
+  /**
+   * Update the daily statistics file with a new usage metric.
+   * @param metric - The usage metric to aggregate.
+   */
   private async updateDailyStats(metric: UsageMetric) {
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -141,6 +172,11 @@ class AnalyticsTracker {
     }
   }
 
+  /**
+   * Get daily statistics for the last N days.
+   * @param days - Number of days to retrieve (default: 7).
+   * @returns An object mapping date strings to DailyStats.
+   */
   async getStats(days: number = 7): Promise<{ [date: string]: DailyStats }> {
     try {
       const data = await fs.readFile(this.statsFile, 'utf8');
@@ -160,6 +196,11 @@ class AnalyticsTracker {
     }
   }
 
+  /**
+   * Get the most used tools over the last N days.
+   * @param days - Number of days to aggregate (default: 7).
+   * @returns An object mapping tool names to usage counts.
+   */
   async getTopTools(days: number = 7): Promise<{ [tool: string]: number }> {
     const stats = await this.getStats(days);
     const toolCounts: { [tool: string]: number } = {};
@@ -176,6 +217,11 @@ class AnalyticsTracker {
     );
   }
 
+  /**
+   * Get the breakdown of editor usage over the last N days.
+   * @param days - Number of days to aggregate (default: 7).
+   * @returns An object mapping editor names to usage counts.
+   */
   async getEditorBreakdown(days: number = 7): Promise<{ [editor: string]: number }> {
     const stats = await this.getStats(days);
     const editorCounts: { [editor: string]: number } = {};
@@ -189,6 +235,11 @@ class AnalyticsTracker {
     return editorCounts;
   }
 
+  /**
+   * Get a summary of analytics for the last N days, including top tools and editors.
+   * @param days - Number of days to summarize (default: 7).
+   * @returns An object with summary statistics and breakdowns.
+   */
   async getSummary(days: number = 7) {
     const stats = await this.getStats(days);
     const topTools = await this.getTopTools(days);
@@ -215,6 +266,11 @@ class AnalyticsTracker {
 export const analytics = new AnalyticsTracker();
 
 // Middleware for Express/Netlify functions
+/**
+ * Middleware to wrap a handler with analytics tracking for Express/Netlify functions.
+ * @param toolName - The name of the tool being tracked.
+ * @returns A function that wraps the handler and tracks analytics.
+ */
 export function withAnalytics(toolName: string) {
   return async (handler: Function, req: any, res?: any) => {
     const startTime = Date.now();

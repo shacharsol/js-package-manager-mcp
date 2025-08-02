@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
-import { USER_AGENT_IDENTIFIERS } from './constants';
+import { detectEditorFromUserAgent } from './constants.js';
 
 /**
  * Represents a single usage metric for a tool invocation.
@@ -74,10 +74,7 @@ class AnalyticsTracker {
    * @returns The detected editor type or 'unknown'.
    */
   private detectEditor(userAgent?: string): string {
-    if (!userAgent) return 'unknown';
-    const ua = userAgent.toLowerCase();
-    const found = USER_AGENT_IDENTIFIERS.find(id => ua.includes(id));
-    return found || 'unknown';
+    return detectEditorFromUserAgent(userAgent || '');
   }
 
   /**

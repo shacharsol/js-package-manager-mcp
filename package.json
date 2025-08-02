@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc",
     "build:netlify": "npm run build && npm run copy:netlify",
-    "copy:netlify": "mkdir -p netlify/functions && cp dist/netlify-adapter.js netlify/functions/mcp.js",
+    "copy:netlify": "mkdir -p netlify/functions && cp dist/netlify-adapter.js netlify/functions/mcp.js && cp dist/health.js netlify/functions/health.js",
     "dev": "tsx watch src/index.ts",
     "dev:netlify": "netlify dev",
     "start": "node dist/index.js",

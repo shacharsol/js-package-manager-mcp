@@ -1,67 +1,124 @@
 /**
- * The current protocol version for MCP agents.
- * Use this as the value for protocolVersion in API payloads and headers.
+ * Application-wide constants for NPM Plus MCP Server.
+ * Centralizes all configuration values, URLs, version information, and detection patterns.
  */
-/**
- * The protocol version string used for MCP agent communication.
- */
-export const PROTOCOL_VERSION = "2024-11-05";
+
+// ==================== VERSION AND PROTOCOL ====================
 
 /**
- * The current version of the npm-plus-mcp-server service.
+ * Current application version used across all components.
+ * @constant {string}
  */
-/**
- * The semantic version of the npm-plus-mcp-server service.
- */
-export const SERVICE_VERSION = "1.0.0";
+export const VERSION = '1.0.0';
 
 /**
- * Supported user agent identifiers.
+ * MCP (Model Context Protocol) version supported by this server.
+ * @constant {string}
  */
-/**
- * List of supported user agent identifiers for client detection.
- */
-export const USER_AGENT_IDENTIFIERS = [
-  'claude',
-  'windsurf',
-  'cursor',
-  'vscode',
-  'cline'
-];
+export const MCP_PROTOCOL_VERSION = '2024-11-05';
 
 /**
- * Package manager names and identifiers.
+ * Server name identifier for MCP protocol.
+ * @constant {string}
+ */
+export const SERVER_NAME = 'javascript-package-manager';
+
+// ==================== PACKAGE MANAGERS ====================
+
+/**
+ * Supported package managers with their command-line names.
+ * @constant {Record<string, PackageManagerType>}
  */
 export const PACKAGE_MANAGERS = {
-  NPM: 'npm' as const,
-  YARN: 'yarn' as const,
-  PNPM: 'pnpm' as const
+  NPM: 'npm',
+  YARN: 'yarn', 
+  PNPM: 'pnpm',
 } as const;
 
 /**
- * Ecosystem identifier for npm packages.
+ * Package manager lock file names for automatic detection.
+ * Ordered by detection priority (most specific first).
+ * @constant {Array<{manager: string, file: string}>}
  */
-export const NPM_ECOSYSTEM = 'npm';
+export const LOCK_FILES = [
+  { manager: PACKAGE_MANAGERS.PNPM, file: 'pnpm-lock.yaml' },
+  { manager: PACKAGE_MANAGERS.YARN, file: 'yarn.lock' },
+  { manager: PACKAGE_MANAGERS.NPM, file: 'package-lock.json' },
+] as const;
+
+// ==================== EXTERNAL API URLS ====================
 
 /**
- * External service URLs and API endpoints.
+ * External service URLs for package registry and analysis.
+ * @constant {Record<string, string>}
  */
 export const URLS = {
   // NPM Registry and API
   NPM_REGISTRY: 'https://registry.npmjs.org',
   NPM_API: 'https://api.npmjs.org',
-  NPM_WEBSITE: 'https://www.npmjs.com',
   
-  // Bundle analysis services
+  // Bundle analysis
   BUNDLEPHOBIA_API: 'https://bundlephobia.com/api',
-  PACKAGEPHOBIA_API: 'https://packagephobia.com/v2/api.json',
   
   // Security databases
   GITHUB_ADVISORY_API: 'https://api.github.com/advisories',
+  GITHUB_ADVISORIES_WEBSITE: 'https://github.com/advisories',
   OSV_API: 'https://api.osv.dev/v1',
   OSV_WEBSITE: 'https://osv.dev/vulnerability',
-  GITHUB_ADVISORIES_WEBSITE: 'https://github.com/advisories',
-  
-  // License information
-  OPENSOURCE_LICENSES: 'https://opensource.org/licenses'
 } as const;
+
+// ==================== USER AGENT DETECTION ====================
+
+/**
+ * Editor detection patterns from User-Agent strings.
+ * Each pattern maps to a standardized editor name.
+ * @constant {Array<{pattern: string, name: string}>}
+ */
+export const EDITOR_PATTERNS = [
+  { pattern: 'claude', name: 'claude' },
+  { pattern: 'windsurf', name: 'windsurf' },
+  { pattern: 'cursor', name: 'cursor' },
+  { pattern: 'vscode', name: 'vscode' },
+  { pattern: 'cline', name: 'cline' },
+  { pattern: 'vs code', name: 'vscode' },
+  { pattern: 'visual studio code', name: 'vscode' },
+] as const;
+
+// ==================== SECURITY CONSTANTS ====================
+
+/**
+ * Ecosystem identifier for npm packages in vulnerability databases.
+ * @constant {string}
+ */
+export const NPM_ECOSYSTEM = 'npm';
+
+// ==================== HELPER FUNCTIONS ====================
+
+/**
+ * Detects editor type from User-Agent string using predefined patterns.
+ * 
+ * @param userAgent - The User-Agent string to analyze
+ * @returns The detected editor name or 'unknown' if no match found
+ * 
+ * @example
+ * ```typescript
+ * const editor = detectEditorFromUserAgent('Claude Desktop/1.0');
+ * console.log(editor); // 'claude'
+ * 
+ * const unknown = detectEditorFromUserAgent('Custom Browser/1.0');
+ * console.log(unknown); // 'unknown'
+ * ```
+ */
+export function detectEditorFromUserAgent(userAgent: string): string {
+  if (!userAgent) return 'unknown';
+  
+  const ua = userAgent.toLowerCase();
+  
+  for (const { pattern, name } of EDITOR_PATTERNS) {
+    if (ua.includes(pattern)) {
+      return name;
+    }
+  }
+  
+  return 'unknown';
+}

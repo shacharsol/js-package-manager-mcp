@@ -56,6 +56,7 @@ export const URLS = {
   // NPM Registry and API
   NPM_REGISTRY: 'https://registry.npmjs.org',
   NPM_API: 'https://api.npmjs.org',
+  NPM_WEBSITE: 'https://www.npmjs.com',
   
   // Bundle analysis
   BUNDLEPHOBIA_API: 'https://bundlephobia.com/api',

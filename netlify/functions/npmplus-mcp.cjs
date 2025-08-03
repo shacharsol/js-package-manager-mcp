@@ -64,8 +64,23 @@ exports.handler = async (event, context) => {
     };
   }
 
+  // Parse JSON body with proper error handling
+  let body;
   try {
-    const body = JSON.parse(event.body || '{}');
+    body = JSON.parse(event.body || '{}');
+  } catch (parseError) {
+    console.error('Invalid JSON in request body:', parseError);
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Invalid JSON in request body',
+        details: parseError.message 
+      })
+    };
+  }
+
+  try {
     
     // Handle MCP protocol requests
     if (body.method === 'initialize') {

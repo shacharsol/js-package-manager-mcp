@@ -30,6 +30,37 @@ export async function createHTTPMCPServer(port: number = HTTP_SETTINGS.DEFAULT_P
       return;
     }
     
+    if (req.url === '/tools') {
+      // Return tools list for analysis tools like Smithery
+      try {
+        // Import the tools modules to get the tools list
+        const searchTools = await import('./tools/search-tools.js');
+        const installTools = await import('./tools/install-tools.js');
+        const securityTools = await import('./tools/security-tools.js');
+        const analysisTools = await import('./tools/analysis-tools.js');
+        const managementTools = await import('./tools/management-tools.js');
+        const { convertToolSchema } = await import('./utils/schema-converter.js');
+        
+        const allTools = [
+          ...searchTools.tools,
+          ...installTools.tools,
+          ...securityTools.tools,
+          ...analysisTools.tools,
+          ...managementTools.tools
+        ];
+        
+        const convertedTools = allTools.map(tool => convertToolSchema(tool));
+        
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ tools: convertedTools }, null, 2));
+        return;
+      } catch (error) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Failed to load tools' }));
+        return;
+      }
+    }
+    
     if (req.url === '/mcp') {
       // Handle MCP over SSE
       const transport = new SSEServerTransport("/mcp", res);
@@ -60,6 +91,7 @@ export async function createHTTPMCPServer(port: number = HTTP_SETTINGS.DEFAULT_P
             <h2>Endpoints</h2>
             <ul>
               <li><code>/health</code> - Health check</li>
+              <li><code>/tools</code> - Tools list (JSON)</li>
               <li><code>/mcp</code> - MCP Server-Sent Events endpoint</li>
             </ul>
             

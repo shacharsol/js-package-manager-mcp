@@ -1,0 +1,45 @@
+name: npmplus-mcp-server
+description: "Production-ready MCP server for intelligent JavaScript package management"
+version: "1.0.13"
+
+# Build configuration
+build:
+  dockerfile: Dockerfile
+  context: .
+  
+# Runtime configuration  
+runtime:
+  port: 3000
+  healthcheck:
+    path: /health
+    interval: 30s
+    timeout: 3s
+    retries: 3
+
+# MCP Server configuration
+mcp:
+  # HTTP endpoint for MCP tools discovery
+  tools_endpoint: /tools
+  # SSE endpoint for MCP communication
+  endpoint: /mcp
+  # Supported transport methods
+  transports:
+    - http
+    - sse
+
+# Environment variables
+env:
+  NODE_ENV: production
+  PORT: 3000
+
+# Resource limits
+resources:
+  memory: 512Mi
+  cpu: 500m
+
+# Labels for organization
+labels:
+  category: "package-management"
+  language: "typescript"
+  protocol: "mcp"
+  framework: "nodejs"

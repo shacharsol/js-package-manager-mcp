@@ -1,22 +1,15 @@
 name: npmplus-mcp-server
-description: "Production-ready MCP server for intelligent JavaScript package management"
+description: "MCP server for JavaScript package management"
 version: "2.0.1"
 
-# Runtime configuration  
+# Let Smithery handle the Docker setup
 runtime:
-  port: 3000
   start_command: "node dist/http-index.js"
   
-# Build configuration
+# Ensure dependencies are installed and built
 build:
-  build_command: "npm run build"
+  build_command: "npm ci --production=false && npm run build"
   
-# MCP Server configuration
+# MCP configuration
 mcp:
-  tools_endpoint: /tools
   endpoint: /mcp
-
-# Environment variables
-env:
-  NODE_ENV: production
-  PORT: 3000

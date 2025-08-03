@@ -212,11 +212,36 @@ See [Cursor Usage Guide](docs/CURSOR_WINDSURF_USAGE.md#-cursor-usage)
 <details>
 <summary><strong>📝 VS Code + 🧬 Cline</strong></summary>
 
-**Method 1: Cline Extension Settings**
-Add to VS Code settings.json:
+**Prerequisites:**
+- VS Code (version 1.102 or later for full MCP support)
+- Node.js installed
+- Cline extension by saoudrizwan
+
+**Setup Steps:**
+
+1. **Install Cline Extension**
+   - Open VS Code Extensions (Ctrl+Shift+X)
+   - Search for "Cline" by saoudrizwan
+   - Install and reload VS Code
+
+2. **Configure AI Model**
+   - Click Cline icon in Activity Bar
+   - Sign in at app.cline.bot
+   - Configure your AI model (Anthropic, OpenAI, etc.)
+
+3. **Add NPM Plus MCP Server**
+
+**Method 1: Automatic Setup (Recommended)**
+```
+In Cline chat: "add a tool for JavaScript package management using npmplus-mcp-server"
+```
+Cline will automatically configure the MCP server for you.
+
+**Method 2: Manual Cline Configuration**
+Click "MCP Servers" → "Configure MCP Servers" → Add to `cline_mcp_settings.json`:
 ```json
 {
-  "cline.mcpServers": {
+  "mcpServers": {
     "npmplus-mcp": {
       "command": "npx",
       "args": ["-y", "npmplus-mcp-server"]
@@ -225,23 +250,34 @@ Add to VS Code settings.json:
 }
 ```
 
-**Method 2: Hosted Service**
+**Method 3: VS Code Native MCP**
+Create `.vscode/mcp.json` or use Command Palette: "MCP: Add Server":
 ```json
 {
-  "cline.mcpServers": {
+  "mcpServers": {
     "npmplus-mcp": {
-      "transport": "http",
-      "url": "https://api.npmplus.dev/mcp"
+      "command": "npx",
+      "args": ["-y", "npmplus-mcp-server"]
     }
   }
 }
 ```
 
-**How to call MCP:**
-- Use `@npmplus-mcp` in Cline chat
-- Example: *"@npmplus-mcp search for express middleware"*
+**Usage:**
+- Tools appear automatically in Cline's agent mode
+- Use explicit prompts: "Use npmplus-mcp to search for react packages"
+- Example: "Use the package manager tool to find Express middleware"
 
-See [VS Code & Cline Setup Guide](docs/VSCODE_CLINE_SETUP.md) for detailed instructions.
+**Troubleshooting:**
+- Check server status in Cline's "Installed" servers tab
+- Use restart button next to MCP server if needed
+- Click "Show Output" to view server logs
+- Adjust timeout settings (30 seconds to 1 hour) if connection issues occur
+
+**Security Notes:**
+- MCP servers run with your local permissions
+- Only install servers from trusted sources
+- Review configuration before enabling servers
 </details>
 
 ## 🔧 Available Tools

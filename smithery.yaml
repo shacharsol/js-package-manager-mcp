@@ -2,14 +2,20 @@ name: npmplus-mcp-server
 description: "MCP server for JavaScript package management"
 version: "2.0.1"
 
-# Let Smithery handle the Docker setup
-runtime:
-  start_command: "node dist/http-index.js"
-  
-# Ensure dependencies are installed and built
+# Smithery will auto-detect Node.js and create appropriate Dockerfile
 build:
-  build_command: "npm ci --production=false && npm run build"
+  # Install all dependencies and build the project
+  build_command: |
+    npm ci --production=false
+    npm run build
+    npm prune --production
+  
+# Runtime configuration
+runtime:
+  # Start the compiled server
+  start_command: "node dist/http-index.js"
   
 # MCP configuration
 mcp:
+  # MCP SSE endpoint
   endpoint: /mcp

@@ -46,7 +46,7 @@
   },
   "homepage": "https://npmplus.dev",
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.5.0",

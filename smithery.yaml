@@ -1,22 +1,14 @@
-name: npmplus-mcp-server
-description: "Production-ready MCP server for intelligent JavaScript package management"
-version: "2.0.1"
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
 
-# Runtime configuration  
-runtime:
-  port: 3000
-  start_command: "node dist/http-index.js"
-  
-# Build configuration
-build:
-  build_command: "npm run build"
-  
-# MCP Server configuration
-mcp:
-  tools_endpoint: /tools
-  endpoint: /mcp
-
-# Environment variables
-env:
-  NODE_ENV: production
-  PORT: 3000
+startCommand:
+  type: stdio
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => ({ command: 'node', args: ['dist/index.js'] })
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required: []
+    properties: {}
+  exampleConfig: {}

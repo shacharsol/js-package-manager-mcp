@@ -421,7 +421,7 @@ describe('Netlify Function Endpoints JSON Format Tests', () => {
 
       const result = await mcpHandler(event, mockContext);
 
-      expect(result.statusCode).toBe(500);
+      expect(result.statusCode).toBe(400);
       expect(result.headers['Content-Type']).toBe('application/json');
 
       const responseBody = JSON.parse(result.body);

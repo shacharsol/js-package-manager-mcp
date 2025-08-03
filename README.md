@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/shacharsol/js-package-manager-mcp)
+[![smithery badge](https://smithery.ai/badge/@shacharsol/js-package-manager-mcp)](https://smithery.ai/server/@shacharsol/js-package-manager-mcp)
 
 > 🚀 **Open-source MCP server for intelligent JavaScript package management**  
 > Works seamlessly with Claude, Windsurf, Cursor, VS Code, and any MCP-compatible AI editor.
@@ -44,6 +45,14 @@
     }
   }
 }
+```
+
+### Installing via Smithery
+
+To install NPM Plus for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@shacharsol/js-package-manager-mcp):
+
+```bash
+npx -y @smithery/cli install @shacharsol/js-package-manager-mcp --client claude
 ```
 
 ### Self-Hosting (Advanced)

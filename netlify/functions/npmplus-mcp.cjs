@@ -40,13 +40,13 @@ exports.handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         name: "npmplus-mcp",
-        version: "11.0.2",
+        version: "12.0.0",
         description: "JavaScript Package Manager MCP Server",
         capabilities: {
           tools: {},
           server: {
             name: "npmplus-mcp",
-            version: "11.0.2"
+            version: "12.0.0"
           }
         },
         endpoints: {
@@ -102,7 +102,7 @@ exports.handler = async (event, context) => {
             protocolVersion: "2024-11-05",
             serverInfo: {
               name: "npmplus-mcp",
-              version: "11.0.2"
+              version: "12.0.0"
             },
             capabilities: {
               tools: {}
@@ -463,7 +463,7 @@ function makePostRequest(url, postData) {
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(postDataString),
-        'User-Agent': 'npmplus-mcp/11.0.2'
+        'User-Agent': 'npmplus-mcp/12.0.0'
       }
     };
     

@@ -4,6 +4,8 @@
 const https = require('https');
 const { exec } = require('child_process');
 const util = require('util');
+const fs = require('fs');
+const path = require('path');
 const execAsync = util.promisify(exec);
 
 exports.handler = async (event, context) => {
@@ -225,12 +227,12 @@ exports.handler = async (event, context) => {
         // Security Tools
         {
           name: "audit_dependencies",
-          description: "Audit dependencies for vulnerabilities (provide package.json content for analysis)",
+          description: "Audit dependencies for vulnerabilities (provide either cwd path or package.json content)",
           inputSchema: {
             type: "object",
             properties: {
-              packageJson: { type: "string", description: "Package.json content to audit" },
-              cwd: { type: "string", description: "Working directory (not applicable for hosted service)" },
+              cwd: { type: "string", description: "Working directory path (use '.' for current directory or full path)" },
+              packageJson: { type: "string", description: "Package.json content as string (alternative to cwd)" },
               fix: { type: "boolean", description: "Auto-fix vulnerabilities", default: false }
             }
           }
@@ -251,23 +253,23 @@ exports.handler = async (event, context) => {
         // Additional Tools
         {
           name: "check_outdated",
-          description: "Check for outdated packages",
+          description: "Check for outdated packages (provide either cwd path or package.json content)",
           inputSchema: {
             type: "object",
             properties: {
-              cwd: { type: "string", description: "Working directory (not applicable for hosted service)" },
-              packageJson: { type: "string", description: "Package.json content (optional for hosted service)" }
+              cwd: { type: "string", description: "Working directory path (use '.' for current directory or full path)" },
+              packageJson: { type: "string", description: "Package.json content as string (alternative to cwd)" }
             }
           }
         },
         {
           name: "dependency_tree",
-          description: "Display dependency tree (provide package.json content for analysis)",
+          description: "Display dependency tree (provide either cwd path or package.json content)",
           inputSchema: {
             type: "object",
             properties: {
-              packageJson: { type: "string", description: "Package.json content to analyze" },
-              cwd: { type: "string", description: "Working directory (not applicable for hosted service)" },
+              cwd: { type: "string", description: "Working directory path (use '.' for current directory or full path)" },
+              packageJson: { type: "string", description: "Package.json content as string (alternative to cwd)" },
               depth: { type: "number", description: "Tree depth", default: 3 },
               production: { type: "boolean", description: "Production only", default: false }
             }
@@ -275,12 +277,12 @@ exports.handler = async (event, context) => {
         },
         {
           name: "analyze_dependencies",
-          description: "Analyze project dependencies (provide package.json content for analysis)",
+          description: "Analyze project dependencies (provide either cwd path or package.json content)",
           inputSchema: {
             type: "object",
             properties: {
-              packageJson: { type: "string", description: "Package.json content to analyze" },
-              cwd: { type: "string", description: "Working directory (not applicable for hosted service)" },
+              cwd: { type: "string", description: "Working directory path (use '.' for current directory or full path)" },
+              packageJson: { type: "string", description: "Package.json content as string (alternative to cwd)" },
               circular: { type: "boolean", description: "Check circular deps", default: true },
               orphans: { type: "boolean", description: "Check orphaned files", default: true }
             }
@@ -288,12 +290,12 @@ exports.handler = async (event, context) => {
         },
         {
           name: "list_licenses",
-          description: "List project licenses (provide package.json content for analysis)",
+          description: "List project licenses (provide either cwd path or package.json content)",
           inputSchema: {
             type: "object",
             properties: {
-              packageJson: { type: "string", description: "Package.json content to analyze" },
-              cwd: { type: "string", description: "Working directory (not applicable for hosted service)" }
+              cwd: { type: "string", description: "Working directory path (use '.' for current directory or full path)" },
+              packageJson: { type: "string", description: "Package.json content as string (alternative to cwd)" }
             }
           }
         },
@@ -486,6 +488,57 @@ function makePostRequest(url, postData) {
   });
 }
 
+// Helper function to get package.json content from either provided content or file system
+async function getPackageJsonData(args) {
+  const { packageJson, cwd } = args;
+  
+  // If packageJson content is provided directly, use it
+  if (packageJson) {
+    try {
+      return { data: JSON.parse(packageJson), source: 'provided content' };
+    } catch (error) {
+      throw new Error(`Invalid package.json content: ${error.message}`);
+    }
+  }
+  
+  // If cwd is provided, try to read package.json from file system
+  if (cwd) {
+    try {
+      // Resolve the working directory
+      let workingDir;
+      if (cwd === '.') {
+        // For Netlify Functions, we need to handle "." specially
+        // Try to use a more reasonable default or the current process directory
+        workingDir = process.env.LAMBDA_TASK_ROOT || process.cwd();
+      } else if (path.isAbsolute(cwd)) {
+        workingDir = cwd;
+      } else {
+        // Relative path - resolve from current working directory
+        workingDir = path.resolve(process.cwd(), cwd);
+      }
+      
+      const packageJsonPath = path.join(workingDir, 'package.json');
+      
+      // Check if package.json exists
+      if (!fs.existsSync(packageJsonPath)) {
+        throw new Error(`package.json not found at: ${packageJsonPath}`);
+      }
+      
+      const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8');
+      return { 
+        data: JSON.parse(packageJsonContent), 
+        source: `file: ${packageJsonPath}`,
+        workingDir
+      };
+    } catch (error) {
+      throw new Error(`Failed to read package.json from ${cwd}: ${error.message}`);
+    }
+  }
+  
+  // Neither packageJson content nor cwd provided
+  return null;
+}
+
 // Tool implementations
 async function searchPackages(args) {
   const { query, limit = 25, from = 0 } = args;
@@ -666,12 +719,14 @@ async function getDownloadStats(args) {
 }
 
 async function auditDependencies(args) {
-  const { packageJson } = args;
+  const { fix = false } = args;
   
   try {
-    if (packageJson) {
-      // Parse the provided package.json to audit its dependencies
-      const pkgData = JSON.parse(packageJson);
+    // Try to get package.json data from either provided content or file system
+    const packageInfo = await getPackageJsonData(args);
+    
+    if (packageInfo) {
+      const pkgData = packageInfo.data;
       const dependencies = { ...pkgData.dependencies, ...pkgData.devDependencies };
       const vulnerabilityResults = [];
       const packagesChecked = [];
@@ -700,7 +755,8 @@ async function auditDependencies(args) {
         }
       }
       
-      let message = `🔒 Security Audit Results:\n\n`;
+      let message = `🔒 Security Audit Results for ${pkgData.name || 'Project'}:\n`;
+      message += `📁 Source: ${packageInfo.source}\n`;
       message += `📊 Packages analyzed: ${packagesChecked.length}/${Object.keys(dependencies).length}\n\n`;
       
       if (vulnerabilityResults.length > 0) {
@@ -731,18 +787,22 @@ async function auditDependencies(args) {
       };
     }
     
-    // Default guidance if no package.json provided
+    // No package.json data available - provide guidance
     return {
       content: [{
         type: "text", 
         text: "🔒 Security Audit Guidance:\n\n" +
-              "To audit dependencies:\n" +
-              "1. Provide your package.json content using the 'packageJson' parameter\n" +
-              "2. Run \`npm audit\` in your project directory\n" +
-              "3. Use \`npm audit fix\` to auto-fix vulnerabilities\n" +
-              "4. Check individual packages with the 'check_vulnerability' tool\n\n" +
-              "For comprehensive local auditing:\n" +
-              "https://github.com/shacharsol/js-package-manager-mcp"
+              "To audit dependencies, you can:\n\n" +
+              "🔧 Option 1: Provide package.json content\n" +
+              "• Use 'packageJson' parameter with your package.json content\n\n" +
+              "🔧 Option 2: Specify working directory\n" +
+              "• Use 'cwd' parameter with path to your project\n" +
+              "• Example: cwd=\".\" for current directory\n" +
+              "• Example: cwd=\"/path/to/project\" for specific path\n\n" +
+              "💡 Local alternatives:\n" +
+              "• Run \`npm audit\` in your project directory\n" +
+              "• Use \`npm audit fix\` to auto-fix vulnerabilities\n" +
+              "• Check individual packages with 'check_vulnerability' tool"
       }]
     };
   } catch (error) {
@@ -828,12 +888,12 @@ async function checkVulnerability(args) {
 }
 
 async function checkOutdated(args) {
-  const { packageJson } = args;
-  
   try {
-    // If user provides package.json content, analyze it
-    if (packageJson) {
-      const pkgData = JSON.parse(packageJson);
+    // Try to get package.json data from either provided content or file system
+    const packageInfo = await getPackageJsonData(args);
+    
+    if (packageInfo) {
+      const pkgData = packageInfo.data;
       const dependencies = { ...pkgData.dependencies, ...pkgData.devDependencies };
       const results = [];
       const outdated = [];
@@ -857,7 +917,8 @@ async function checkOutdated(args) {
         }
       }
       
-      let message = "📋 Package Version Analysis:\n\n";
+      let message = `📋 Package Version Analysis for ${pkgData.name || 'Project'}:\n`;
+      message += `📁 Source: ${packageInfo.source}\n\n`;
       
       if (outdated.length > 0) {
         message += `⚠️  Found ${outdated.length} outdated packages:\n\n`;
@@ -879,41 +940,21 @@ async function checkOutdated(args) {
       };
     }
     
-    // Default: Check popular packages
-    const popularPackages = [
-      'react', 'vue', 'angular', 'express', 'lodash', 'axios', 'typescript', 
-      'webpack', 'vite', 'jest', 'eslint', 'prettier', 'next', 'nuxt'
-    ];
-    
-    const results = [];
-    
-    for (const pkg of popularPackages.slice(0, 8)) {
-      try {
-        const data = await makeRequest(`https://registry.npmjs.org/${pkg}`);
-        const latest = data['dist-tags']?.latest;
-        if (latest) {
-          results.push(`📦 ${pkg}: ${latest}`);
-        }
-      } catch (error) {
-        // Skip failed requests
-      }
-    }
-    
-    let message = "📋 Popular Package Versions (Latest):\n\n";
-    
-    if (results.length > 0) {
-      message += results.join('\n') + '\n\n';
-    }
-    
-    message += "💡 To check YOUR packages:\n";
-    message += "1. Copy your package.json content and call this tool with 'packageJson' parameter\n";
-    message += "2. Run `npm outdated` locally for immediate results\n";
-    message += "3. Use 'package_info' tool to check specific versions";
-    
+    // No package.json data available - provide guidance
     return {
       content: [{
         type: "text",
-        text: message
+        text: "📋 Check Outdated Packages:\n\n" +
+              "To check for outdated packages, you can:\n\n" +
+              "🔧 Option 1: Provide package.json content\n" +
+              "• Use 'packageJson' parameter with your package.json content\n\n" +
+              "🔧 Option 2: Specify working directory\n" +
+              "• Use 'cwd' parameter with path to your project\n" +
+              "• Example: cwd=\".\" for current directory\n" +
+              "• Example: cwd=\"/path/to/project\" for specific path\n\n" +
+              "💡 Local alternative:\n" +
+              "• Run \`npm outdated\` in your project directory\n" +
+              "• Use \`npm update\` to update packages"
       }]
     };
   } catch (error) {
@@ -927,41 +968,106 @@ async function checkOutdated(args) {
 }
 
 async function dependencyTree(args) {
-  const { packageJson, depth = 3 } = args;
+  const { depth = 3, production = false } = args;
   
   try {
-    if (packageJson) {
-      const pkgData = JSON.parse(packageJson);
+    // Try to get package.json data from either provided content or file system
+    const packageInfo = await getPackageJsonData(args);
+    
+    if (packageInfo) {
+      const pkgData = packageInfo.data;
       const dependencies = pkgData.dependencies || {};
-      const devDependencies = pkgData.devDependencies || {};
+      const devDependencies = production ? {} : (pkgData.devDependencies || {});
       
-      let message = `🌳 Dependency Tree for ${pkgData.name || 'Project'}:\n\n`;
+      let message = `🌳 Dependency Tree for ${pkgData.name || 'Project'}:\n`;
+      message += `📁 Source: ${packageInfo.source}\n`;
       
-      // Production dependencies
-      if (Object.keys(dependencies).length > 0) {
-        message += `🟢 Production Dependencies (${Object.keys(dependencies).length}):\n`;
-        Object.entries(dependencies).forEach(([name, version]) => {
-          message += `├── ${name}@${version}\n`;
-        });
-        message += '\n';
+      // If we have a working directory, try to get a more detailed tree using npm list
+      if (packageInfo.workingDir) {
+        try {
+          const prodFlag = production ? ' --prod' : '';
+          const depthFlag = ` --depth=${depth}`;
+          const { stdout } = await execAsync(`npm list --json${prodFlag}${depthFlag}`, {
+            cwd: packageInfo.workingDir,
+            timeout: 10000
+          });
+          
+          const npmTreeData = JSON.parse(stdout);
+          message += `\n🔍 Live dependency tree (depth ${depth}):\n\n`;
+          
+          // Format the npm tree output
+          function formatDependencyTree(deps, prefix = '', isLast = true) {
+            const entries = Object.entries(deps || {});
+            entries.forEach(([name, info], index) => {
+              const isLastEntry = index === entries.length - 1;
+              const connector = isLastEntry ? '└──' : '├──';
+              const version = info.version || 'unknown';
+              message += `${prefix}${connector} ${name}@${version}\n`;
+              
+              if (info.dependencies && Object.keys(info.dependencies).length > 0) {
+                const newPrefix = prefix + (isLastEntry ? '    ' : '│   ');
+                formatDependencyTree(info.dependencies, newPrefix, isLastEntry);
+              }
+            });
+          }
+          
+          formatDependencyTree(npmTreeData.dependencies);
+          
+        } catch (execError) {
+          // Fall back to basic package.json analysis if npm list fails
+          message += `\n⚠️ Could not run npm list (${execError.message})\n`;
+          message += "Showing basic package.json structure:\n\n";
+          
+          // Production dependencies
+          if (Object.keys(dependencies).length > 0) {
+            message += `🟢 Production Dependencies (${Object.keys(dependencies).length}):\n`;
+            Object.entries(dependencies).forEach(([name, version]) => {
+              message += `├── ${name}@${version}\n`;
+            });
+            message += '\n';
+          }
+          
+          // Development dependencies
+          if (!production && Object.keys(devDependencies).length > 0) {
+            message += `🔴 Development Dependencies (${Object.keys(devDependencies).length}):\n`;
+            Object.entries(devDependencies).forEach(([name, version]) => {
+              message += `├── ${name}@${version}\n`;
+            });
+            message += '\n';
+          }
+        }
+      } else {
+        // No file system access - show basic structure from package.json content
+        message += "\nBasic dependency structure from package.json:\n\n";
+        
+        // Production dependencies
+        if (Object.keys(dependencies).length > 0) {
+          message += `🟢 Production Dependencies (${Object.keys(dependencies).length}):\n`;
+          Object.entries(dependencies).forEach(([name, version]) => {
+            message += `├── ${name}@${version}\n`;
+          });
+          message += '\n';
+        }
+        
+        // Development dependencies
+        if (!production && Object.keys(devDependencies).length > 0) {
+          message += `🔴 Development Dependencies (${Object.keys(devDependencies).length}):\n`;
+          Object.entries(devDependencies).forEach(([name, version]) => {
+            message += `├── ${name}@${version}\n`;
+          });
+          message += '\n';
+        }
       }
       
-      // Development dependencies
-      if (Object.keys(devDependencies).length > 0) {
-        message += `🔴 Development Dependencies (${Object.keys(devDependencies).length}):\n`;
-        Object.entries(devDependencies).forEach(([name, version]) => {
-          message += `├── ${name}@${version}\n`;
-        });
-        message += '\n';
-      }
-      
-      message += `📊 Summary:\n`;
+      message += `\n📊 Summary:\n`;
       message += `• Total dependencies: ${Object.keys(dependencies).length + Object.keys(devDependencies).length}\n`;
       message += `• Production: ${Object.keys(dependencies).length}\n`;
-      message += `• Development: ${Object.keys(devDependencies).length}\n\n`;
+      if (!production) {
+        message += `• Development: ${Object.keys(devDependencies).length}\n`;
+      }
       
-      message += `💡 For detailed tree with sub-dependencies:\n`;
-      message += `• Run \`npm list\` locally\n`;
+      message += `\n💡 For more detailed analysis:\n`;
+      message += `• Run \`npm list\` locally for full tree\n`;
       message += `• Use \`npm list --depth=${depth}\` for specific depth\n`;
       message += `• Use \`npm list --prod\` for production only\n`;
       
@@ -973,17 +1079,22 @@ async function dependencyTree(args) {
       };
     }
     
-    // Default guidance
+    // No package.json data available - provide guidance
     return {
       content: [{
         type: "text",
         text: "🌳 Dependency Tree Analysis:\n\n" +
-              "To analyze your dependency tree:\n" +
-              "1. Provide your package.json content using 'packageJson' parameter\n" +
-              "2. Run \`npm list\` locally for complete tree with sub-dependencies\n" +
-              "3. Run \`npm list --depth=0\` for top-level dependencies only\n" +
-              "4. Use \`npm ls package-name\` to find where a package is used\n\n" +
-              "For interactive dependency tree analysis, use the self-hosted version."
+              "To view your dependency tree, you can:\n\n" +
+              "🔧 Option 1: Provide package.json content\n" +
+              "• Use 'packageJson' parameter with your package.json content\n\n" +
+              "🔧 Option 2: Specify working directory\n" +
+              "• Use 'cwd' parameter with path to your project\n" +
+              "• Example: cwd=\".\" for current directory\n" +
+              "• Example: cwd=\"/path/to/project\" for specific path\n\n" +
+              "💡 Local alternatives:\n" +
+              "• Run \`npm list\` for complete tree\n" +
+              "• Run \`npm list --depth=0\` for top-level only\n" +
+              "• Use \`npm ls package-name\` to find specific packages"
       }]
     };
   } catch (error) {
@@ -997,16 +1108,20 @@ async function dependencyTree(args) {
 }
 
 async function analyzeDependencies(args) {
-  const { packageJson, circular = true, orphans = true } = args;
+  const { circular = true, orphans = true } = args;
   
   try {
-    if (packageJson) {
-      const pkgData = JSON.parse(packageJson);
+    // Try to get package.json data from either provided content or file system
+    const packageInfo = await getPackageJsonData(args);
+    
+    if (packageInfo) {
+      const pkgData = packageInfo.data;
       const dependencies = pkgData.dependencies || {};
       const devDependencies = pkgData.devDependencies || {};
       const allDeps = { ...dependencies, ...devDependencies };
       
-      let message = `🔍 Dependency Analysis for ${pkgData.name || 'Project'}:\n\n`;
+      let message = `🔍 Dependency Analysis for ${pkgData.name || 'Project'}:\n`;
+      message += `📁 Source: ${packageInfo.source}\n\n`;
       
       // Basic statistics
       message += `📊 Package Statistics:\n`;
@@ -1096,20 +1211,24 @@ async function analyzeDependencies(args) {
       };
     }
     
-    // Default guidance if no package.json provided
+    // No package.json data available - provide guidance
     return {
       content: [{
         type: "text",
         text: "🔍 Dependency Analysis:\n\n" +
-              "To analyze your dependencies:\n" +
-              "1. Provide your package.json content using 'packageJson' parameter\n" +
-              "2. Run \`npm list\` to check for missing packages\n" +
-              "3. Use \`npm dedupe\` to optimize dependency tree\n" +
-              "4. Use \`depcheck\` to find unused dependencies\n\n" +
+              "To analyze your dependencies, you can:\n\n" +
+              "🔧 Option 1: Provide package.json content\n" +
+              "• Use 'packageJson' parameter with your package.json content\n\n" +
+              "🔧 Option 2: Specify working directory\n" +
+              "• Use 'cwd' parameter with path to your project\n" +
+              "• Example: cwd=\".\" for current directory\n" +
+              "• Example: cwd=\"/path/to/project\" for specific path\n\n" +
               "📊 Available online analysis:\n" +
               "• Use 'check_bundle_size' for package size analysis\n" +
               "• Use 'download_stats' to check package popularity\n\n" +
-              "For comprehensive local analysis, use the self-hosted version."
+              "💡 Local alternatives:\n" +
+              "• Run \`npm list\` to check for missing packages\n" +
+              "• Use \`depcheck\` to find unused dependencies"
       }]
     };
   } catch (error) {
@@ -1123,16 +1242,18 @@ async function analyzeDependencies(args) {
 }
 
 async function listLicenses(args) {
-  const { packageJson } = args;
-  
   try {
-    if (packageJson) {
-      const pkgData = JSON.parse(packageJson);
+    // Try to get package.json data from either provided content or file system
+    const packageInfo = await getPackageJsonData(args);
+    
+    if (packageInfo) {
+      const pkgData = packageInfo.data;
       const dependencies = { ...pkgData.dependencies, ...pkgData.devDependencies };
       const licenseInfo = [];
       const licenseStats = {};
       
-      let message = `📄 License Analysis for ${pkgData.name || 'Project'}:\n\n`;
+      let message = `📄 License Analysis for ${pkgData.name || 'Project'}:\n`;
+      message += `📁 Source: ${packageInfo.source}\n\n`;
       
       // Check licenses for up to 15 packages to avoid timeout
       const packageEntries = Object.entries(dependencies).slice(0, 15);
@@ -1198,19 +1319,24 @@ async function listLicenses(args) {
       };
     }
     
-    // Default guidance if no package.json provided
+    // No package.json data available - provide guidance
     return {
       content: [{
         type: "text",
         text: "📄 License Information:\n\n" +
-              "To analyze project licenses:\n" +
-              "1. Provide your package.json content using 'packageJson' parameter\n" +
-              "2. Use \`npx license-checker\` for comprehensive local analysis\n" +
-              "3. Use \`nlf\` (Node License Finder): \`npx nlf\`\n\n" +
+              "To analyze project licenses, you can:\n\n" +
+              "🔧 Option 1: Provide package.json content\n" +
+              "• Use 'packageJson' parameter with your package.json content\n\n" +
+              "🔧 Option 2: Specify working directory\n" +
+              "• Use 'cwd' parameter with path to your project\n" +
+              "• Example: cwd=\".\" for current directory\n" +
+              "• Example: cwd=\"/path/to/project\" for specific path\n\n" +
               "💡 Available online:\n" +
               "• Use 'check_license' tool to check individual package licenses\n" +
               "• Use 'package_info' tool for detailed package metadata\n\n" +
-              "For automated license auditing, use the self-hosted version."
+              "💡 Local alternatives:\n" +
+              "• Use \`npx license-checker\` for comprehensive analysis\n" +
+              "• Use \`nlf\` (Node License Finder): \`npx nlf\`"
       }]
     };
   } catch (error) {

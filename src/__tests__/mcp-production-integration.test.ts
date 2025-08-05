@@ -316,7 +316,7 @@ describe('MCP Production Integration Tests', () => {
       expect(response.result).toBeDefined();
       
       const textContent = response.result.content[0].text;
-      expect(textContent).toContain('Vulnerability check');
+      expect(textContent).toContain('Vulnerability Check');
       expect(textContent).toContain('lodash');
     }, 15000);
   });

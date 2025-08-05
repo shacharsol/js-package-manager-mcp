@@ -423,7 +423,7 @@ async function handleToolCall(toolName, args) {
   }
 }
 
-// HTTP helper function
+// HTTP helper functions
 function makeRequest(url) {
   return new Promise((resolve, reject) => {
     https.get(url, (res) => {
@@ -445,6 +445,44 @@ function makeRequest(url) {
         }
       });
     }).on('error', reject);
+  });
+}
+
+function makePostRequest(url, postData) {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const postDataString = JSON.stringify(postData);
+    
+    const options = {
+      hostname: urlObj.hostname,
+      port: urlObj.port || 443,
+      path: urlObj.pathname + urlObj.search,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postDataString)
+      }
+    };
+    
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => {
+        if (res.statusCode >= 400) {
+          reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`));
+          return;
+        }
+        try {
+          resolve(JSON.parse(data));
+        } catch (error) {
+          reject(new Error('Invalid JSON response'));
+        }
+      });
+    });
+    
+    req.on('error', reject);
+    req.write(postDataString);
+    req.end();
   });
 }
 
@@ -740,17 +778,7 @@ async function checkVulnerability(args) {
       version: targetVersion
     };
     
-    const osvResponse = await fetch(osvUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(osvQuery)
-    });
-    
-    if (!osvResponse.ok) {
-      throw new Error(`OSV API error: ${osvResponse.status}`);
-    }
-    
-    const osvData = await osvResponse.json();
+    const osvData = await makePostRequest(osvUrl, osvQuery);
     
     let message = `🔒 Vulnerability Check for ${packageName}@${targetVersion}:\n\n`;
     

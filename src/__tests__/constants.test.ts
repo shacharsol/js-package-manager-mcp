@@ -13,7 +13,7 @@ describe('Constants', () => {
   describe('Version and Protocol', () => {
     it('should have valid version format', () => {
       expect(VERSION).toMatch(/^\d+\.\d+\.\d+$/);
-      expect(VERSION).toBe('2.0.1');
+      expect(VERSION).toBe('3.0.0');
     });
 
     it('should have valid MCP protocol version', () => {

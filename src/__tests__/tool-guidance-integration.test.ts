@@ -55,9 +55,9 @@ describe('Tool Guidance Integration Tests', () => {
       expect(response.result.isError).toBeUndefined(); // Should not be an error
       
       const textContent = response.result.content[0].text;
-      expect(textContent).toContain('Check Outdated Packages');
+      expect(textContent).toContain('Popular Package Versions');
       expect(textContent).toContain('npm outdated');
-      expect(textContent).toContain('hosted service');
+      expect(textContent).toContain('To check YOUR packages');
     });
 
     it('should provide guidance for dependency_tree', async () => {
@@ -162,7 +162,7 @@ describe('Tool Guidance Integration Tests', () => {
       expect(response.result).toBeDefined();
       
       const textContent = response.result.content[0].text;
-      expect(textContent).toContain('Clean Cache');
+      expect(textContent).toContain('Cache Management');
       expect(textContent).toContain('npm cache clean');
       expect(textContent).toContain('yarn cache clean');
       expect(textContent).toContain('pnpm store prune');

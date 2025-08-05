@@ -42,7 +42,8 @@ export default {
     '^execa$': '<rootDir>/src/__tests__/__mocks__/execa.js'
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(execa|strip-final-newline|npm-run-path|path-key|onetime|mimic-fn|human-signals|is-stream|merge-stream|signal-exit|get-stream|is-plain-obj|cross-spawn|@modelcontextprotocol|zod|p-limit|yocto-queue|undici)/)'
+    'node_modules/(?!(execa|strip-final-newline|npm-run-path|path-key|onetime|mimic-fn|human-signals|is-stream|merge-stream|signal-exit|get-stream|is-plain-obj|cross-spawn|@modelcontextprotocol|zod|p-limit|yocto-queue|undici)/)',
+    'dist/(?!.*)'
   ],
   testTimeout: 30000,
   maxWorkers: 4,

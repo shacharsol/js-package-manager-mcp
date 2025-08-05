@@ -6,7 +6,7 @@
  * Current application version used across all components.
  * @constant {string}
  */
-export declare const VERSION = "5.0.0";
+export declare const VERSION = "6.0.0";
 /**
  * MCP (Model Context Protocol) version supported by this server.
  * @constant {string}
@@ -114,7 +114,7 @@ export declare const CACHE_SETTINGS: {
 export declare const HTTP_SETTINGS: {
     readonly DEFAULT_PORT: 3000;
     readonly RATE_LIMIT_CONCURRENT: 5;
-    readonly USER_AGENT: "mcp-package-manager/5.0.0";
+    readonly USER_AGENT: "mcp-package-manager/6.0.0";
 };
 /**
  * Quality weights for package search scoring.

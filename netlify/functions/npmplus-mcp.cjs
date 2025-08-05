@@ -38,13 +38,13 @@ exports.handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         name: "npmplus-mcp",
-        version: "3.0.0",
+        version: "4.0.0",
         description: "JavaScript Package Manager MCP Server",
         capabilities: {
           tools: {},
           server: {
             name: "npmplus-mcp",
-            version: "3.0.0"
+            version: "4.0.0"
           }
         },
         endpoints: {
@@ -100,7 +100,7 @@ exports.handler = async (event, context) => {
             protocolVersion: "2024-11-05",
             serverInfo: {
               name: "npmplus-mcp",
-              version: "3.0.0"
+              version: "4.0.0"
             },
             capabilities: {
               tools: {}

@@ -57,7 +57,7 @@ describe('MCP Production Integration Tests', () => {
       expect(response.result.capabilities).toBeDefined();
       expect(response.result.serverInfo).toBeDefined();
       expect(response.result.serverInfo.name).toBe('npmplus-mcp');
-      expect(response.result.serverInfo.version).toBe('4.0.0');
+      expect(response.result.serverInfo.version).toBe('5.0.0');
     });
 
     it('should list all available tools', async () => {
@@ -399,7 +399,7 @@ describe('MCP Production Integration Tests', () => {
       
       const response = JSON.parse(result.body);
       expect(response.name).toBe('npmplus-mcp');
-      expect(response.version).toBe('4.0.0');
+      expect(response.version).toBe('5.0.0');
     });
 
     it('should reject unsupported HTTP methods', async () => {

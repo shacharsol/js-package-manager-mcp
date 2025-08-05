@@ -70,7 +70,7 @@ describe('Enhanced Tool Functionality Tests', () => {
       expect(textContent).toMatch(/outdated packages|up to date/);
     }, 15000);
 
-    it('should provide popular packages when no package.json provided', async () => {
+    it('should provide guidance when no package.json or cwd provided', async () => {
       const event = createEvent('POST', {
         jsonrpc: '2.0',
         id: 2,
@@ -89,9 +89,10 @@ describe('Enhanced Tool Functionality Tests', () => {
       expect(response.result).toBeDefined();
       
       const textContent = response.result.content[0].text;
-      expect(textContent).toContain('Popular Package Versions');
-      expect(textContent).toContain('react:');
+      expect(textContent).toContain('Check Outdated Packages');
       expect(textContent).toContain('packageJson');
+      expect(textContent).toContain('cwd');
+      expect(textContent).toContain('npm outdated');
     }, 10000);
   });
 

@@ -1,6 +1,6 @@
 {
   "name": "npmplus-mcp-server",
-  "version": "12.0.3",
+  "version": "12.0.4",
   "description": "Production-ready MCP server for intelligent JavaScript package management. Works with Claude, Windsurf, Cursor, VS Code, and any MCP-compatible AI editor.",
   "main": "dist/index.js",
   "bin": {

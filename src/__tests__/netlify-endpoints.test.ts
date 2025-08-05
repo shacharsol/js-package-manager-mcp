@@ -126,19 +126,22 @@ describe('Netlify Function Endpoints JSON Format Tests', () => {
 
       const responseBody = JSON.parse(result.body);
       expect(responseBody).toMatchObject({
-        protocolVersion: '1.0.0',
-        serverInfo: {
-          name: 'npmplus-mcp',
-          version: expect.stringMatching(/^\d+\.\d+\.\d+$/)
-        },
-        capabilities: {
-          tools: {}
+        jsonrpc: "2.0",
+        result: {
+          protocolVersion: '2024-11-05',
+          serverInfo: {
+            name: 'npmplus-mcp',
+            version: expect.stringMatching(/^\d+\.\d+\.\d+$/)
+          },
+          capabilities: {
+            tools: {}
+          }
         }
       });
       
       // Also verify it matches the current package version
       const packageVersion = require('../../package.json').version;
-      expect(responseBody.serverInfo.version).toBe(packageVersion);
+      expect(responseBody.result.serverInfo.version).toBe(packageVersion);
     });
 
     it('should handle tools/list request with valid JSON schema response', async () => {

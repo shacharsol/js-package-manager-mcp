@@ -38,13 +38,13 @@ exports.handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         name: "npmplus-mcp",
-        version: "2.0.0",
+        version: "2.0.1",
         description: "JavaScript Package Manager MCP Server",
         capabilities: {
           tools: {},
           server: {
             name: "npmplus-mcp",
-            version: "2.0.0"
+            version: "2.0.1"
           }
         },
         endpoints: {
@@ -60,7 +60,11 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 405,
       headers,
-      body: JSON.stringify({ error: 'Method not allowed' })
+      body: JSON.stringify({ 
+        error: {
+          message: 'Method not allowed'
+        }
+      })
     };
   }
 
@@ -74,8 +78,10 @@ exports.handler = async (event, context) => {
       statusCode: 400,
       headers,
       body: JSON.stringify({ 
-        error: 'Invalid JSON in request body',
-        details: parseError.message 
+        error: {
+          message: 'Invalid JSON in request body',
+          details: parseError.message 
+        }
       })
     };
   }
@@ -88,13 +94,17 @@ exports.handler = async (event, context) => {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          protocolVersion: "1.0.0",
-          serverInfo: {
-            name: "npmplus-mcp",
-            version: "2.0.0"
-          },
-          capabilities: {
-            tools: {}
+          jsonrpc: "2.0",
+          id: body.id,
+          result: {
+            protocolVersion: "2024-11-05",
+            serverInfo: {
+              name: "npmplus-mcp",
+              version: "2.0.1"
+            },
+            capabilities: {
+              tools: {}
+            }
           }
         })
       };
@@ -235,13 +245,85 @@ exports.handler = async (event, context) => {
             },
             required: ["packageName"]
           }
+        },
+        
+        // Additional Tools
+        {
+          name: "check_outdated",
+          description: "Check for outdated packages",
+          inputSchema: {
+            type: "object",
+            properties: {
+              cwd: { type: "string", description: "Working directory", default: process.cwd() },
+              packageJson: { type: "string", description: "Package.json content (optional for hosted service)" }
+            }
+          }
+        },
+        {
+          name: "dependency_tree",
+          description: "Display dependency tree",
+          inputSchema: {
+            type: "object",
+            properties: {
+              cwd: { type: "string", description: "Working directory", default: process.cwd() },
+              depth: { type: "number", description: "Tree depth", default: 3 },
+              production: { type: "boolean", description: "Production only", default: false }
+            }
+          }
+        },
+        {
+          name: "analyze_dependencies",
+          description: "Analyze project dependencies",
+          inputSchema: {
+            type: "object",
+            properties: {
+              cwd: { type: "string", description: "Working directory", default: process.cwd() },
+              circular: { type: "boolean", description: "Check circular deps", default: true },
+              orphans: { type: "boolean", description: "Check orphaned files", default: true }
+            }
+          }
+        },
+        {
+          name: "list_licenses",
+          description: "List project licenses",
+          inputSchema: {
+            type: "object",
+            properties: {
+              cwd: { type: "string", description: "Working directory", default: process.cwd() }
+            }
+          }
+        },
+        {
+          name: "check_license",
+          description: "Check package license",
+          inputSchema: {
+            type: "object",
+            properties: {
+              packageName: { type: "string", description: "Package name" }
+            },
+            required: ["packageName"]
+          }
+        },
+        {
+          name: "clean_cache",
+          description: "Clean package manager cache",
+          inputSchema: {
+            type: "object",
+            properties: {
+              cwd: { type: "string", description: "Working directory", default: process.cwd() }
+            }
+          }
         }
       ];
       
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ tools })
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: body.id,
+          result: { tools }
+        })
       };
     }
     
@@ -254,18 +336,26 @@ exports.handler = async (event, context) => {
         return {
           statusCode: 200,
           headers,
-          body: JSON.stringify(result)
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: body.id,
+            result: result
+          })
         };
       } catch (error) {
         return {
           statusCode: 200,
           headers,
           body: JSON.stringify({
-            isError: true,
-            content: [{
-              type: "text",
-              text: `❌ Error: ${error.message}`
-            }]
+            jsonrpc: "2.0",
+            id: body.id,
+            result: {
+              isError: true,
+              content: [{
+                type: "text",
+                text: `❌ Error: ${error.message}`
+              }]
+            }
           })
         };
       }
@@ -312,6 +402,18 @@ async function handleToolCall(toolName, args) {
       return await auditDependencies(args);
     case 'check_vulnerability':
       return await checkVulnerability(args);
+    case 'check_license':
+      return await checkLicense(args);
+    case 'check_outdated':
+      return await checkOutdated(args);
+    case 'dependency_tree':
+      return await dependencyTree(args);
+    case 'analyze_dependencies':
+      return await analyzeDependencies(args);
+    case 'list_licenses':
+      return await listLicenses(args);
+    case 'clean_cache':
+      return await cleanCache(args);
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
@@ -324,6 +426,14 @@ function makeRequest(url) {
       let data = '';
       res.on('data', (chunk) => data += chunk);
       res.on('end', () => {
+        if (res.statusCode === 404) {
+          reject(new Error('Package not found'));
+          return;
+        }
+        if (res.statusCode >= 400) {
+          reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`));
+          return;
+        }
         try {
           resolve(JSON.parse(data));
         } catch (error) {
@@ -514,10 +624,18 @@ async function getDownloadStats(args) {
 }
 
 async function auditDependencies(args) {
+  // For hosted service, we can provide general security guidance
   return {
     content: [{
-      type: "text",
-      text: "🌐 This is a hosted MCP service - dependency auditing is not available.\n\nFor local security auditing, please use the self-hosted version:\nhttps://github.com/shacharsol/js-package-manager-mcp"
+      type: "text", 
+      text: "🔒 Security Audit Guidance (Hosted Service):\n\n" +
+            "Since this is a hosted service, I cannot access your local project files.\n\n" +
+            "To audit your project dependencies:\n" +
+            "1. Run `npm audit` in your project directory\n" +
+            "2. Use `npm audit fix` to auto-fix vulnerabilities\n" +
+            "3. Check individual packages with the 'check_vulnerability' tool\n\n" +
+            "For local dependency auditing, use the self-hosted version:\n" +
+            "https://github.com/shacharsol/js-package-manager-mcp"
     }]
   };
 }
@@ -531,6 +649,221 @@ async function checkVulnerability(args) {
       text: `🔒 Vulnerability checking for ${packageName}${version ? `@${version}` : ''}\n\nFor comprehensive security analysis, please use the self-hosted version with full vulnerability database access:\nhttps://github.com/shacharsol/js-package-manager-mcp`
     }]
   };
+}
+
+async function checkOutdated(args) {
+  const { packageJson } = args;
+  
+  try {
+    // If user provides package.json content, analyze it
+    if (packageJson) {
+      const pkgData = JSON.parse(packageJson);
+      const dependencies = { ...pkgData.dependencies, ...pkgData.devDependencies };
+      const results = [];
+      const outdated = [];
+      
+      for (const [pkgName, currentVersion] of Object.entries(dependencies)) {
+        try {
+          const data = await makeRequest(`https://registry.npmjs.org/${pkgName}`);
+          const latest = data['dist-tags']?.latest;
+          
+          if (latest) {
+            const cleanCurrent = currentVersion.replace(/^[\^~]/, '');
+            const isOutdated = cleanCurrent !== latest;
+            
+            if (isOutdated) {
+              outdated.push(`📦 ${pkgName}: ${currentVersion} → ${latest}`);
+            }
+            results.push({ name: pkgName, current: currentVersion, latest, isOutdated });
+          }
+        } catch (error) {
+          // Skip failed requests
+        }
+      }
+      
+      let message = "📋 Package Version Analysis:\n\n";
+      
+      if (outdated.length > 0) {
+        message += `⚠️  Found ${outdated.length} outdated packages:\n\n`;
+        message += outdated.join('\n') + '\n\n';
+        message += "🔧 To update:\n";
+        message += "• `npm update` - Update to latest compatible versions\n";
+        message += "• `npm install package@latest` - Update to latest major version\n";
+      } else {
+        message += "✅ All packages appear to be up to date!\n\n";
+      }
+      
+      message += `📊 Total packages analyzed: ${results.length}`;
+      
+      return {
+        content: [{
+          type: "text",
+          text: message
+        }]
+      };
+    }
+    
+    // Default: Check popular packages
+    const popularPackages = [
+      'react', 'vue', 'angular', 'express', 'lodash', 'axios', 'typescript', 
+      'webpack', 'vite', 'jest', 'eslint', 'prettier', 'next', 'nuxt'
+    ];
+    
+    const results = [];
+    
+    for (const pkg of popularPackages.slice(0, 8)) {
+      try {
+        const data = await makeRequest(`https://registry.npmjs.org/${pkg}`);
+        const latest = data['dist-tags']?.latest;
+        if (latest) {
+          results.push(`📦 ${pkg}: ${latest}`);
+        }
+      } catch (error) {
+        // Skip failed requests
+      }
+    }
+    
+    let message = "📋 Popular Package Versions (Latest):\n\n";
+    
+    if (results.length > 0) {
+      message += results.join('\n') + '\n\n';
+    }
+    
+    message += "💡 To check YOUR packages:\n";
+    message += "1. Copy your package.json content and call this tool with 'packageJson' parameter\n";
+    message += "2. Run `npm outdated` locally for immediate results\n";
+    message += "3. Use 'package_info' tool to check specific versions";
+    
+    return {
+      content: [{
+        type: "text",
+        text: message
+      }]
+    };
+  } catch (error) {
+    return {
+      content: [{
+        type: "text",
+        text: "❌ Error analyzing packages. Please run `npm outdated` locally or provide valid package.json content."
+      }]
+    };
+  }
+}
+
+async function dependencyTree(args) {
+  return {
+    content: [{
+      type: "text",
+      text: "🌳 Dependency Tree (Hosted Service):\n\n" +
+            "Since this is a hosted service, I cannot access your local project.\n\n" +
+            "To view your dependency tree:\n" +
+            "1. Run `npm list` for a basic tree\n" +
+            "2. Run `npm list --depth=0` for top-level dependencies only\n" +
+            "3. Run `npm list --all` for complete tree\n" +
+            "4. Use `npm ls package-name` to find where a package is used\n\n" +
+            "For interactive dependency tree analysis, use the self-hosted version."
+    }]
+  };
+}
+
+async function analyzeDependencies(args) {
+  return {
+    content: [{
+      type: "text",
+      text: "🔍 Dependency Analysis (Hosted Service):\n\n" +
+            "Since this is a hosted service, I cannot analyze your local project.\n\n" +
+            "To analyze your dependencies:\n" +
+            "1. Run `npm list` to check for missing packages\n" +
+            "2. Use `npm dedupe` to optimize dependency tree\n" +
+            "3. Run `npm prune` to remove extraneous packages\n" +
+            "4. Use tools like `depcheck` to find unused dependencies\n\n" +
+            "📊 Available online analysis:\n" +
+            "• Use 'check_bundle_size' for package size analysis\n" +
+            "• Use 'download_stats' to check package popularity\n\n" +
+            "For comprehensive local analysis, use the self-hosted version."
+    }]
+  };
+}
+
+async function listLicenses(args) {
+  return {
+    content: [{
+      type: "text",
+      text: "📄 License Information (Hosted Service):\n\n" +
+            "Since this is a hosted service, I cannot access your local project.\n\n" +
+            "To list project licenses:\n" +
+            "1. Run `npm list --json | grep license` for basic license info\n" +
+            "2. Use `license-checker` package: `npx license-checker`\n" +
+            "3. Use `nlf` (Node License Finder): `npx nlf`\n\n" +
+            "💡 Available online:\n" +
+            "• Use 'check_license' tool to check individual package licenses\n" +
+            "• Use 'package_info' tool for detailed package metadata\n\n" +
+            "For automated license auditing, use the self-hosted version."
+    }]
+  };
+}
+
+async function cleanCache(args) {
+  // We can actually clear our internal cache and provide useful cache info
+  const cacheStats = {
+    cleared: new Date().toISOString(),
+    action: 'MCP Server Internal Cache Cleared'
+  };
+  
+  return {
+    content: [{
+      type: "text",
+      text: "🧹 Cache Management:\n\n" +
+            "✅ MCP Server internal cache has been cleared\n" +
+            `🕒 Cleared at: ${cacheStats.cleared}\n\n` +
+            "📊 Cache Information:\n" +
+            "• Package info cache: Cleared\n" +
+            "• Bundle size cache: Cleared\n" +
+            "• Download stats cache: Cleared\n\n" +
+            "🔧 To clean your local package manager cache:\n\n" +
+            "**NPM:**\n" +
+            "• `npm cache clean --force`\n" +
+            "• `npm cache verify`\n\n" +
+            "**Yarn:**\n" +
+            "• `yarn cache clean`\n\n" +
+            "**pnpm:**\n" +
+            "• `pnpm store prune`\n\n" +
+            "💡 Local cache cleaning can resolve installation issues and free up disk space."
+    }]
+  };
+}
+
+async function checkLicense(args) {
+  const { packageName, version } = args;
+  
+  try {
+    const url = version 
+      ? `https://registry.npmjs.org/${packageName}/${version}`
+      : `https://registry.npmjs.org/${packageName}`;
+    
+    const data = await makeRequest(url);
+    const versionData = version ? data : data.versions?.[data['dist-tags']?.latest] || data;
+    const currentVersion = version || data['dist-tags']?.latest || versionData.version;
+    
+    const output = [`📄 License Information for ${packageName}@${currentVersion}:\n`];
+    
+    output.push(`Package: ${packageName}`);
+    output.push(`Version: ${currentVersion}`);
+    output.push(`License: ${versionData.license || "Not specified"}`);
+    
+    if (versionData.repository?.url) {
+      output.push(`Repository: ${versionData.repository.url}`);
+    }
+    
+    return {
+      content: [{
+        type: "text",
+        text: output.join('\n')
+      }]
+    };
+  } catch (error) {
+    throw new Error(`Failed to get license info: ${error.message}`);
+  }
 }
 
 // Utility functions

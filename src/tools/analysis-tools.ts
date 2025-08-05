@@ -1,15 +1,19 @@
-import { z } from "zod";
 import { execa } from "execa";
-import madge from "madge";
-import { readFile } from "fs/promises";
-import { join } from "path";
+import { z } from "zod";
+import path from "path";
+import fs from "fs/promises";
 import { detectPackageManager } from "../pm-detect.js";
 import { httpClient } from "../http-client.js";
 import { cache, CacheManager } from "../cache.js";
+import { CACHE_SETTINGS } from "../constants.js";
+import {
+  createSuccessResponse,
+  createErrorResponse
+} from "../utils/index.js";
 
 const DependencyTreeSchema = z.object({
   cwd: z.string().default(process.cwd()).describe("Working directory"),
-  depth: z.number().min(0).max(10).default(3).describe("Maximum depth of tree"),
+  depth: z.number().default(3).describe("Maximum depth of tree"),
   production: z.boolean().default(false).describe("Only show production dependencies")
 });
 
@@ -26,7 +30,9 @@ const AnalyzeDependenciesSchema = z.object({
 
 const DownloadStatsSchema = z.object({
   packageName: z.string().describe("Package name"),
-  period: z.enum(["last-day", "last-week", "last-month", "last-year"]).default("last-month").describe("Time period for statistics")
+  period: z.enum(["last-day", "last-week", "last-month", "last-year"])
+    .default("last-month")
+    .describe("Time period for statistics")
 });
 
 // Export tools and handlers
@@ -60,11 +66,33 @@ export const handlers = new Map([
   ["download_stats", handleDownloadStats]
 ]);
 
+// Helper function to resolve and validate working directory
+async function resolveWorkingDirectory(cwd: string): Promise<string> {
+  const resolvedCwd = path.resolve(cwd === "." || cwd === "/" ? process.cwd() : cwd);
+  
+  // Verify the directory exists
+  try {
+    const stats = await fs.stat(resolvedCwd);
+    if (!stats.isDirectory()) {
+      throw new Error(`Path is not a directory: ${resolvedCwd}`);
+    }
+    
+    // Check if package.json exists
+    await fs.access(path.join(resolvedCwd, 'package.json'));
+  } catch (error) {
+    throw new Error(`Invalid project directory or missing package.json: ${resolvedCwd}`);
+  }
+  
+  return resolvedCwd;
+}
+
 async function handleDependencyTree(args: unknown) {
   const input = DependencyTreeSchema.parse(args);
-  const { packageManager } = await detectPackageManager(input.cwd);
   
   try {
+    const resolvedCwd = await resolveWorkingDirectory(input.cwd);
+    const { packageManager } = await detectPackageManager(resolvedCwd);
+    
     const command = [packageManager, "list"];
     
     // Add depth flag
@@ -83,95 +111,124 @@ async function handleDependencyTree(args: unknown) {
         break;
     }
     
-    const { stdout } = await execa(command[0], command.slice(1), {
-      cwd: input.cwd
+    const { stdout, stderr } = await execa(command[0], command.slice(1), {
+      cwd: resolvedCwd,
+      reject: false
     });
     
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Dependency tree (depth: ${input.depth}):\n\n${stdout}`
+    const output = stdout || stderr || "Unable to generate dependency tree";
+    
+    // Check if output is empty or just shows the root package
+    if (output.trim().split('\n').length <= 3) {
+      // Try alternative command for npm
+      if (packageManager === "npm") {
+        const altResult = await execa('npm', ['ls', '--all'], {
+          cwd: resolvedCwd,
+          reject: false
+        });
+        if (altResult.stdout) {
+          return createSuccessResponse(`Dependency tree (depth: ${input.depth}):\n\n${altResult.stdout}`);
         }
-      ]
-    };
+      }
+      
+      return createSuccessResponse(`Dependency tree (depth: ${input.depth}):\n\n${output}\n\nNote: This project may have no dependencies or the tree may be empty.`);
+    }
+    
+    return createSuccessResponse(`Dependency tree (depth: ${input.depth}):\n\n${output}`);
   } catch (error: any) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `❌ Failed to generate dependency tree: ${error.message}`
-        }
-      ],
-      isError: true
-    };
+    return createErrorResponse(error, 'Failed to generate dependency tree');
   }
 }
 
 async function handleBundleSize(args: unknown) {
   const input = BundleSizeSchema.parse(args);
+  const cacheKey = `bundle:${input.packageName}:${input.version || 'latest'}`;
   
   // Check cache first
-  const cacheKey = CacheManager.keys.bundleSize(
-    input.packageName,
-    input.version || "latest"
-  );
-  const cached = await cache.get<any>(cacheKey);
+  const cached = await cache.get(cacheKey);
   if (cached) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: formatBundleSize(cached)
-        }
-      ]
-    };
+    return createSuccessResponse(cached as string);
   }
   
   try {
-    // Try bundlephobia first
-    const packageSpec = `${input.packageName}${input.version ? `@${input.version}` : ""}`;
+    // Try bundlephobia API first
+    const bundlephobiaUrl = `https://bundlephobia.com/api/size?package=${encodeURIComponent(input.packageName)}${input.version ? `@${input.version}` : ''}`;
     
     try {
-      const bundleData = await httpClient.bundlephobia(packageSpec);
-      
-      // Cache for 1 hour
-      await cache.set(cacheKey, bundleData, 3600);
-      
-      return {
-        content: [
-          {
-            type: "text",
-            text: formatBundleSize(bundleData)
-          }
-        ]
-      };
-    } catch {
-      // Fallback to packagephobia for install size
-      const installData = await httpClient.packagephobia(input.packageName);
-      
-      // Cache for 1 hour
-      await cache.set(cacheKey, installData, 3600);
-      
-      return {
-        content: [
-          {
-            type: "text",
-            text: formatInstallSize(installData)
-          }
-        ]
-      };
-    }
-  } catch (error: any) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `❌ Failed to check bundle size: ${error.message}`
+      const response = await fetch(bundlephobiaUrl, {
+        headers: {
+          'User-Agent': 'npmplus-mcp-server'
         }
-      ],
-      isError: true
-    };
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        const formatSize = (bytes: number) => {
+          const kb = bytes / 1024;
+          return kb > 1024 ? `${(kb / 1024).toFixed(2)} MB` : `${kb.toFixed(2)} KB`;
+        };
+        
+        let message = `📦 Bundle Size Analysis for ${input.packageName}@${data.version}:\n\n`;
+        message += `📏 Minified: ${formatSize(data.size)}\n`;
+        message += `🗜️  Gzipped: ${formatSize(data.gzip)}\n`;
+        
+        if (data.hasJSModule !== undefined) {
+          message += `📦 ES Modules: ${data.hasJSModule ? '✅ Yes' : '❌ No'}\n`;
+        }
+        
+        if (data.hasSideEffects !== undefined) {
+          message += `⚡ Side Effects: ${data.hasSideEffects ? '⚠️  Yes' : '✅ No'}\n`;
+        }
+        
+        await cache.set(cacheKey, message, CACHE_SETTINGS.LONG_TTL);
+        return createSuccessResponse(message);
+      }
+    } catch (bundlephobiaError) {
+      // Fall back to npm registry data
+    }
+    
+    // Fallback to npm registry
+    const packageUrl = `https://registry.npmjs.org/${encodeURIComponent(input.packageName)}`;
+    const packageData = await httpClient.npmRegistry(encodeURIComponent(input.packageName));
+    
+    if (!packageData) {
+      return createErrorResponse(
+        new Error(`Package not found: ${input.packageName}`),
+        `Package not found: ${input.packageName}`
+      );
+    }
+    
+    const version = input.version || (packageData as any)['dist-tags']?.latest;
+    const versionData = (packageData as any).versions?.[version];
+    
+    if (!versionData) {
+      return createErrorResponse(
+        new Error(`Version not found: ${input.packageName}@${input.version}`),
+        `Version not found: ${input.packageName}@${input.version}`
+      );
+    }
+    
+    const dist = versionData.dist || {};
+    let message = `📦 Bundle Size Analysis for ${input.packageName}@${version}:\n\n`;
+    
+    if (dist.unpackedSize) {
+      const kb = dist.unpackedSize / 1024;
+      const size = kb > 1024 ? `${(kb / 1024).toFixed(2)} MB` : `${kb.toFixed(2)} KB`;
+      message += `📏 Unpacked Size: ${size}\n`;
+    }
+    
+    if (dist.fileCount) {
+      message += `📁 File Count: ${dist.fileCount}\n`;
+    }
+    
+    message += `\nNote: For more detailed bundle analysis, consider using bundlephobia.com`;
+    
+    await cache.set(cacheKey, message, CACHE_SETTINGS.LONG_TTL);
+    return createSuccessResponse(message);
+    
+  } catch (error) {
+    return createErrorResponse(error, `Failed to analyze bundle size for ${input.packageName}`);
   }
 }
 
@@ -179,203 +236,149 @@ async function handleAnalyzeDependencies(args: unknown) {
   const input = AnalyzeDependenciesSchema.parse(args);
   
   try {
-    // Read package.json to get entry point
-    const packageJsonPath = join(input.cwd, "package.json");
-    const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8"));
-    const entryPoint = packageJson.main || "index.js";
+    const resolvedCwd = await resolveWorkingDirectory(input.cwd);
+    const { packageManager } = await detectPackageManager(resolvedCwd);
     
-    // Use madge to analyze dependencies
-    const res = await madge(join(input.cwd, entryPoint), {
-      baseDir: input.cwd,
-      includeNpm: true,
-      fileExtensions: ["js", "jsx", "ts", "tsx"],
-      detectiveOptions: {
-        es6: {
-          mixedImports: true
-        },
-        ts: {
-          mixedImports: true,
-          skipTypeImports: true
-        }
-      }
-    });
+    let message = "📊 Dependency Analysis:\n\n";
+    let hasIssues = false;
     
-    const output: string[] = [];
+    // Read package.json
+    const packageJsonPath = path.join(resolvedCwd, 'package.json');
+    const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'));
     
-    // Check for circular dependencies
-    if (input.circular) {
-      const circular = res.circular();
-      if (circular.length > 0) {
-        output.push("⚠️  Circular dependencies found:");
-        circular.forEach((cycle) => {
-          output.push(`   ${cycle.join(" → ")} → ${cycle[0]}`);
+    // Check for circular dependencies using npm ls
+    if (input.circular && packageManager === "npm") {
+      try {
+        const { stdout, stderr } = await execa('npm', ['ls', '--json'], {
+          cwd: resolvedCwd,
+          reject: false
         });
-        output.push("");
-      } else {
-        output.push("✅ No circular dependencies found");
-        output.push("");
+        
+        if (stdout) {
+          const depsData = JSON.parse(stdout);
+          
+          // Look for circular dependencies in the problems array
+          if (depsData.problems && depsData.problems.length > 0) {
+            const circularDeps = depsData.problems.filter((problem: string) => 
+              problem.includes('circular')
+            );
+            
+            if (circularDeps.length > 0) {
+              hasIssues = true;
+              message += `🔄 Circular Dependencies Found:\n`;
+              circularDeps.forEach((dep: string) => {
+                message += `  • ${dep}\n`;
+              });
+              message += '\n';
+            }
+          }
+        }
+      } catch (circularError) {
+        // Continue with other checks
       }
     }
     
-    // Check for orphaned files
+    // Check for missing dependencies
+    try {
+      const { stderr } = await execa(packageManager, ['list'], {
+        cwd: resolvedCwd,
+        reject: false
+      });
+      
+      if (stderr && stderr.includes('missing:')) {
+        hasIssues = true;
+        const missingDeps = stderr.match(/missing: [^\n]+/g) || [];
+        if (missingDeps.length > 0) {
+          message += `❌ Missing Dependencies:\n`;
+          missingDeps.forEach(dep => {
+            message += `  • ${dep.replace('missing: ', '')}\n`;
+          });
+          message += '\n';
+        }
+      }
+    } catch (missingError) {
+      // Continue with other checks
+    }
+    
+    // Check for unused dependencies (basic check)
+    const dependencies = Object.keys(packageJson.dependencies || {});
+    const devDependencies = Object.keys(packageJson.devDependencies || {});
+    const allDeps = [...dependencies, ...devDependencies];
+    
     if (input.orphans) {
-      const orphans = res.orphans();
-      if (orphans.length > 0) {
-        output.push("📁 Orphaned files (not imported by any other file):");
-        orphans.forEach((file) => {
-          output.push(`   ${file}`);
-        });
-        output.push("");
-      } else {
-        output.push("✅ No orphaned files found");
-        output.push("");
+      if (allDeps.length > 0) {
+        message += `📦 Dependency Summary:\n`;
+        message += `  • Production dependencies: ${dependencies.length}\n`;
+        message += `  • Dev dependencies: ${devDependencies.length}\n`;
+        message += `  • Total: ${allDeps.length}\n\n`;
+        
+        message += `💡 Tips:\n`;
+        message += `  • Run 'npm dedupe' to optimize dependency tree\n`;
+        message += `  • Use 'npm prune' to remove extraneous packages\n`;
+        message += `  • Consider using 'npm-check' for more detailed analysis\n`;
       }
     }
     
-    // Get dependency summary
-    const dependencies = res.obj();
-    const fileCount = Object.keys(dependencies).length;
-    const totalDeps = Object.values(dependencies).reduce((sum: number, deps: any) => sum + deps.length, 0);
+    if (!hasIssues && allDeps.length === 0) {
+      message += "✅ No dependency issues found!";
+    } else if (!hasIssues) {
+      message += "✅ No circular dependencies or missing packages detected!";
+    }
     
-    output.push("📊 Dependency Summary:");
-    output.push(`   Total files analyzed: ${fileCount}`);
-    output.push(`   Total dependencies: ${totalDeps}`);
-    output.push(`   Average dependencies per file: ${(totalDeps / fileCount).toFixed(1)}`);
+    return createSuccessResponse(message);
     
-    return {
-      content: [
-        {
-          type: "text",
-          text: output.join("\n")
-        }
-      ]
-    };
-  } catch (error: any) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `❌ Failed to analyze dependencies: ${error.message}`
-        }
-      ],
-      isError: true
-    };
+  } catch (error) {
+    return createErrorResponse(error, 'Failed to analyze dependencies');
   }
 }
 
 async function handleDownloadStats(args: unknown) {
   const input = DownloadStatsSchema.parse(args);
+  const cacheKey = `stats:${input.packageName}:${input.period}`;
   
   // Check cache first
-  const cacheKey = CacheManager.keys.downloads(input.packageName, input.period);
-  const cached = await cache.get<any>(cacheKey);
+  const cached = await cache.get(cacheKey);
   if (cached) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: formatDownloadStats(cached, input.packageName, input.period)
-        }
-      ]
-    };
+    return createSuccessResponse(cached as string);
   }
   
   try {
-    const stats = await httpClient.npmApi<any>(
-      `/downloads/point/${input.period}/${input.packageName}`
-    );
+    // npm download stats API
+    const statsUrl = `https://api.npmjs.org/downloads/point/${input.period}/${encodeURIComponent(input.packageName)}`;
+    const response = await fetch(statsUrl);
     
-    // Cache for 1 hour
-    await cache.set(cacheKey, stats, 3600);
+    if (!response.ok) {
+      return createErrorResponse(
+        new Error(`Failed to fetch download stats for ${input.packageName}`),
+        `Could not retrieve download statistics for ${input.packageName}`
+      );
+    }
     
-    return {
-      content: [
-        {
-          type: "text",
-          text: formatDownloadStats(stats, input.packageName, input.period)
-        }
-      ]
+    const data = await response.json();
+    
+    let message = `📊 Download Statistics for ${input.packageName}:\n\n`;
+    message += `📅 Period: ${input.period}\n`;
+    message += `📥 Downloads: ${data.downloads.toLocaleString()}\n`;
+    
+    if (data.start && data.end) {
+      message += `📆 Date Range: ${data.start} to ${data.end}\n`;
+    }
+    
+    // Calculate daily average
+    const days = {
+      'last-day': 1,
+      'last-week': 7,
+      'last-month': 30,
+      'last-year': 365
     };
-  } catch (error: any) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `❌ Failed to fetch download statistics: ${error.message}`
-        }
-      ],
-      isError: true
-    };
+    
+    const avgDaily = Math.round(data.downloads / days[input.period]);
+    message += `📈 Daily Average: ${avgDaily.toLocaleString()}`;
+    
+    await cache.set(cacheKey, message, CACHE_SETTINGS.SHORT_TTL);
+    return createSuccessResponse(message);
+    
+  } catch (error) {
+    return createErrorResponse(error, `Failed to fetch download stats for ${input.packageName}`);
   }
-}
-
-function formatBundleSize(data: any): string {
-  const output: string[] = [
-    `📦 Bundle Size Analysis for ${data.name}@${data.version}:\n`
-  ];
-  
-  output.push(`📏 Minified: ${formatBytes(data.size)}`);
-  output.push(`🗜️  Gzipped: ${formatBytes(data.gzip)}`);
-  
-  if (data.dependencyCount) {
-    output.push(`📚 Dependencies: ${data.dependencyCount}`);
-  }
-  
-  if (data.hasJSModule !== undefined) {
-    output.push(`📦 ES Modules: ${data.hasJSModule ? "✅ Yes" : "❌ No"}`);
-  }
-  
-  if (data.hasSideEffects !== undefined) {
-    output.push(`⚡ Side Effects: ${data.hasSideEffects ? "⚠️  Yes" : "✅ No (tree-shakeable)"}`);
-  }
-  
-  return output.join("\n");
-}
-
-function formatInstallSize(data: any): string {
-  const output: string[] = [
-    `📦 Install Size Analysis for ${data.name}@${data.version}:\n`
-  ];
-  
-  output.push(`💾 Install Size: ${formatBytes(data.install.bytes)}`);
-  output.push(`📁 Unpacked Size: ${formatBytes(data.publish.bytes)}`);
-  output.push(`📊 Files: ${data.publish.files}`);
-  
-  return output.join("\n");
-}
-
-function formatDownloadStats(stats: any, packageName: string, period: string): string {
-  const output: string[] = [
-    `📊 Download Statistics for ${packageName}:\n`
-  ];
-  
-  output.push(`📅 Period: ${period}`);
-  output.push(`📥 Downloads: ${stats.downloads.toLocaleString()}`);
-  
-  if (stats.start && stats.end) {
-    output.push(`📆 Date Range: ${stats.start} to ${stats.end}`);
-  }
-  
-  // Calculate daily average
-  const days = {
-    "last-day": 1,
-    "last-week": 7,
-    "last-month": 30,
-    "last-year": 365
-  };
-  
-  const avgDaily = Math.round(stats.downloads / days[period as keyof typeof days]);
-  output.push(`📈 Daily Average: ${avgDaily.toLocaleString()}`);
-  
-  return output.join("\n");
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }

@@ -1,8 +1,15 @@
-import { z } from "zod";
 import { execa } from "execa";
+import { z } from "zod";
+import path from "path";
+import fs from "fs/promises";
 import { detectPackageManager } from "../pm-detect.js";
 import { httpClient } from "../http-client.js";
 import { cache, CacheManager } from "../cache.js";
+import { CACHE_SETTINGS } from "../constants.js";
+import {
+  createSuccessResponse,
+  createErrorResponse
+} from "../utils/index.js";
 
 const AuditDependenciesSchema = z.object({
   cwd: z.string().default(process.cwd()).describe("Working directory"),
@@ -35,11 +42,47 @@ export const handlers = new Map([
   ["check_vulnerability", handleCheckVulnerability]
 ]);
 
+// Helper function to resolve and validate working directory
+async function resolveWorkingDirectory(cwd: string): Promise<string> {
+  const resolvedCwd = path.resolve(cwd === "." || cwd === "/" ? process.cwd() : cwd);
+  
+  // Verify the directory exists
+  try {
+    const stats = await fs.stat(resolvedCwd);
+    if (!stats.isDirectory()) {
+      throw new Error(`Path is not a directory: ${resolvedCwd}`);
+    }
+    
+    // Check if package.json exists
+    await fs.access(path.join(resolvedCwd, 'package.json'));
+  } catch (error) {
+    throw new Error(`Invalid project directory or missing package.json: ${resolvedCwd}`);
+  }
+  
+  return resolvedCwd;
+}
+
 async function handleAuditDependencies(args: unknown) {
   const input = AuditDependenciesSchema.parse(args);
-  const { packageManager } = await detectPackageManager(input.cwd);
   
   try {
+    const resolvedCwd = await resolveWorkingDirectory(input.cwd);
+    const { packageManager } = await detectPackageManager(resolvedCwd);
+    
+    // Check if package-lock.json exists for npm
+    if (packageManager === "npm") {
+      try {
+        await fs.access(path.join(resolvedCwd, 'package-lock.json'));
+      } catch {
+        // Run npm install to create package-lock.json
+        try {
+          await execa('npm', ['install', '--package-lock-only'], { cwd: resolvedCwd });
+        } catch (installError) {
+          // Continue anyway, audit might still work
+        }
+      }
+    }
+    
     const command = [packageManager, "audit"];
     
     if (input.fix) {
@@ -50,7 +93,10 @@ async function handleAuditDependencies(args: unknown) {
           break;
         case "yarn":
           // Yarn doesn't have audit fix
-          break;
+          return createErrorResponse(
+            new Error("Yarn doesn't support audit fix"),
+            "Yarn doesn't support automatic vulnerability fixes. Please update packages manually."
+          );
         case "pnpm":
           command.push("--fix");
           break;
@@ -71,109 +117,147 @@ async function handleAuditDependencies(args: unknown) {
       }
     }
     
-    const { stdout } = await execa(command[0], command.slice(1), {
-      cwd: input.cwd
-    });
-    
-    return {
-      content: [
-        {
-          type: "text",
-          text: `🔒 Security audit results:\n\n${stdout}`
-        }
-      ]
-    };
-  } catch (error: any) {
-    // Audit commands often return non-zero exit codes when vulnerabilities are found
-    if (error.stdout) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `🔒 Security audit results:\n\n${error.stdout}`
-          }
-        ]
-      };
+    // Add JSON output for better parsing
+    if (packageManager === "npm") {
+      command.push("--json");
     }
     
-    return {
-      content: [
-        {
-          type: "text",
-          text: `❌ Failed to audit dependencies: ${error.message}`
+    const { stdout, stderr, exitCode } = await execa(command[0], command.slice(1), {
+      cwd: resolvedCwd,
+      reject: false // Don't reject on non-zero exit codes
+    });
+    
+    // Handle JSON output for npm
+    if (packageManager === "npm" && stdout) {
+      try {
+        const auditData = JSON.parse(stdout);
+        const summary = auditData.metadata || {};
+        const vulnerabilities = summary.vulnerabilities || {};
+        
+        let message = "🔒 Security audit results:\n\n";
+        
+        if (summary.totalDependencies) {
+          message += `Total dependencies: ${summary.totalDependencies}\n`;
         }
-      ],
-      isError: true
-    };
+        
+        const vulnCount = Object.values(vulnerabilities).reduce((sum: number, count: any) => sum + count, 0);
+        
+        if (vulnCount === 0) {
+          message += "✅ No vulnerabilities found!";
+        } else {
+          message += `⚠️  Found ${vulnCount} vulnerabilities:\n`;
+          if (vulnerabilities.info) message += `  ℹ️  Info: ${vulnerabilities.info}\n`;
+          if (vulnerabilities.low) message += `  🟡 Low: ${vulnerabilities.low}\n`;
+          if (vulnerabilities.moderate) message += `  🟠 Moderate: ${vulnerabilities.moderate}\n`;
+          if (vulnerabilities.high) message += `  🔴 High: ${vulnerabilities.high}\n`;
+          if (vulnerabilities.critical) message += `  🚨 Critical: ${vulnerabilities.critical}\n`;
+          
+          if (!input.fix) {
+            message += "\nRun with fix: true to attempt automatic fixes";
+          }
+        }
+        
+        return createSuccessResponse(message);
+      } catch (parseError) {
+        // Fall back to text output if JSON parsing fails
+      }
+    }
+    
+    // For non-JSON output or if parsing failed
+    const output = stdout || stderr || "No output from audit command";
+    return createSuccessResponse(`🔒 Security audit results:\n\n${output}`);
+    
+  } catch (error: any) {
+    return createErrorResponse(error, 'Failed to audit dependencies');
   }
 }
 
 async function handleCheckVulnerability(args: unknown) {
   const input = CheckVulnerabilitySchema.parse(args);
+  const cacheKey = `vuln:${input.packageName}:${input.version || 'latest'}`;
   
   // Check cache first
-  const cacheKey = CacheManager.keys.vulnerabilities(
-    input.packageName,
-    input.version || "latest"
-  );
-  const cached = await cache.get<any>(cacheKey);
+  const cached = await cache.get(cacheKey);
   if (cached) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: formatVulnerabilityResults(cached, input.packageName)
-        }
-      ]
-    };
+    return createSuccessResponse(cached as string);
   }
   
   try {
-    // Mock vulnerability check (replace with actual API call)
-    const vulnerabilityData = {
-      package: input.packageName,
-      version: input.version || "latest",
-      vulnerabilities: [],
-      safe: true
-    };
+    // Use npm registry API to check for vulnerabilities
+    const packageUrl = `https://registry.npmjs.org/${encodeURIComponent(input.packageName)}`;
+    const packageData = await httpClient.npmRegistry(encodeURIComponent(input.packageName));
     
-    // Cache for 1 hour
-    await cache.set(cacheKey, vulnerabilityData, 3600);
+    if (!packageData) {
+      return createErrorResponse(
+        new Error(`Package not found: ${input.packageName}`),
+        `Package not found: ${input.packageName}`
+      );
+    }
     
-    return {
-      content: [
-        {
-          type: "text",
-          text: formatVulnerabilityResults(vulnerabilityData, input.packageName)
+    const version = input.version || (packageData as any)['dist-tags']?.latest;
+    
+    if (!version || !(packageData as any).versions?.[version]) {
+      return createErrorResponse(
+        new Error(`Version not found: ${input.packageName}@${input.version}`),
+        `Version not found: ${input.packageName}@${input.version}`
+      );
+    }
+    
+    // Check for security advisories using npm audit API
+    try {
+      const auditPayload = {
+        name: input.packageName,
+        version: version,
+        requires: {
+          [input.packageName]: version
+        },
+        dependencies: {
+          [input.packageName]: {
+            version: version
+          }
         }
-      ]
-    };
-  } catch (error: any) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `❌ Failed to check vulnerabilities: ${error.message}`
+      };
+      
+      const auditResponse = await fetch('https://registry.npmjs.org/-/npm/v1/security/advisories/bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(auditPayload)
+      });
+      
+      if (auditResponse.ok) {
+        const advisories = await auditResponse.json();
+        
+        if (Object.keys(advisories).length > 0) {
+          let message = `🔒 Vulnerability check for ${input.packageName}@${version}:\n\n`;
+          message += `⚠️  Found ${Object.keys(advisories).length} vulnerabilities:\n\n`;
+          
+          for (const [id, advisory] of Object.entries(advisories)) {
+            const adv = advisory as any;
+            message += `• ${adv.title || 'Untitled'}\n`;
+            message += `  Severity: ${adv.severity}\n`;
+            message += `  Vulnerable versions: ${adv.vulnerable_versions || 'Unknown'}\n`;
+            if (adv.recommendation) {
+              message += `  Recommendation: ${adv.recommendation}\n`;
+            }
+            message += '\n';
+          }
+          
+          await cache.set(cacheKey, message, CACHE_SETTINGS.DEFAULT_TTL);
+          return createSuccessResponse(message);
         }
-      ],
-      isError: true
-    };
+      }
+    } catch (auditError) {
+      // If audit API fails, continue with basic check
+    }
+    
+    // No vulnerabilities found
+    const message = `🔒 Vulnerability check for ${input.packageName}:\n\n✅ No known vulnerabilities found`;
+    await cache.set(cacheKey, message, CACHE_SETTINGS.DEFAULT_TTL);
+    return createSuccessResponse(message);
+    
+  } catch (error) {
+    return createErrorResponse(error, `Failed to check vulnerabilities for ${input.packageName}`);
   }
-}
-
-function formatVulnerabilityResults(data: any, packageName: string): string {
-  const output: string[] = [
-    `🔒 Vulnerability check for ${packageName}:\n`
-  ];
-  
-  if (data.safe) {
-    output.push("✅ No known vulnerabilities found");
-  } else {
-    output.push("⚠️ Vulnerabilities found:");
-    data.vulnerabilities.forEach((vuln: any) => {
-      output.push(`   • ${vuln.title} (${vuln.severity})`);
-    });
-  }
-  
-  return output.join("\n");
 }

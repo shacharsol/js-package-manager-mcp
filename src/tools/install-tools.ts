@@ -46,7 +46,8 @@ export const handlers = new Map([
 
 async function handleInstallPackages(args: unknown) {
   const input = InstallPackagesSchema.parse(args);
-  const { packageManager } = await detectPackageManager(input.cwd);
+  const resolvedCwd = input.cwd === "." ? process.cwd() : input.cwd;
+  const { packageManager } = await detectPackageManager(resolvedCwd);
   
   try {
     const command = [packageManager, "install", ...input.packages];
@@ -61,7 +62,7 @@ async function handleInstallPackages(args: unknown) {
     }
     
     const { stdout } = await execa(command[0], command.slice(1), {
-      cwd: input.cwd
+      cwd: resolvedCwd
     });
     
     const packageList = formatList(input.packages);
@@ -75,7 +76,8 @@ async function handleInstallPackages(args: unknown) {
 
 async function handleUpdatePackages(args: unknown) {
   const input = UpdatePackagesSchema.parse(args);
-  const { packageManager } = await detectPackageManager(input.cwd);
+  const resolvedCwd = input.cwd === "." ? process.cwd() : input.cwd;
+  const { packageManager } = await detectPackageManager(resolvedCwd);
   
   try {
     const command = [packageManager, "update"];
@@ -85,7 +87,7 @@ async function handleUpdatePackages(args: unknown) {
     }
     
     const { stdout } = await execa(command[0], command.slice(1), {
-      cwd: input.cwd
+      cwd: resolvedCwd
     });
     
     const target = input.packages ? formatList(input.packages) : 'all packages';
@@ -98,7 +100,8 @@ async function handleUpdatePackages(args: unknown) {
 
 async function handleRemovePackages(args: unknown) {
   const input = RemovePackagesSchema.parse(args);
-  const { packageManager } = await detectPackageManager(input.cwd);
+  const resolvedCwd = input.cwd === "." ? process.cwd() : input.cwd;
+  const { packageManager } = await detectPackageManager(resolvedCwd);
   
   try {
     const command = [packageManager, "uninstall", ...input.packages];
@@ -108,7 +111,7 @@ async function handleRemovePackages(args: unknown) {
     }
     
     const { stdout } = await execa(command[0], command.slice(1), {
-      cwd: input.cwd
+      cwd: resolvedCwd
     });
     
     const packageList = formatList(input.packages);
@@ -122,7 +125,8 @@ async function handleRemovePackages(args: unknown) {
 
 async function handleCheckOutdated(args: unknown) {
   const input = CheckOutdatedSchema.parse(args);
-  const { packageManager } = await detectPackageManager(input.cwd);
+  const resolvedCwd = input.cwd === "." ? process.cwd() : input.cwd;
+  const { packageManager } = await detectPackageManager(resolvedCwd);
   
   try {
     const command = [packageManager, "outdated"];
@@ -132,7 +136,7 @@ async function handleCheckOutdated(args: unknown) {
     }
     
     const { stdout } = await execa(command[0], command.slice(1), {
-      cwd: input.cwd
+      cwd: resolvedCwd
     });
     
     return createSuccessResponse(`📊 Outdated packages:\n\n${stdout}`);

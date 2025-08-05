@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { execa } from "execa";
 import { readFile, readdir } from "fs/promises";
-import { join } from "path";
+import path, { join } from "path";
 import { detectPackageManager } from "../pm-detect.js";
 import { httpClient } from "../http-client.js";
 import { CacheService } from '../services/CacheService.js';
@@ -63,11 +63,11 @@ export const handlers = new Map([
 
 async function handleListLicenses(args: unknown) {
   const input = ListLicensesSchema.parse(args);
-  
+  const resolvedCwd = path.resolve(input.cwd === "." || input.cwd === "/" ? process.cwd() : input.cwd);
   try {
     // Read package.json and lock file to get all dependencies
     const packageJson = JSON.parse(
-      await readFile(join(input.cwd, "package.json"), "utf-8")
+      await readFile(join(resolvedCwd, "package.json"), "utf-8")
     );
     
     const dependencies = {
@@ -82,7 +82,7 @@ async function handleListLicenses(args: unknown) {
     for (const [name, version] of Object.entries(dependencies)) {
       try {
         // Try to read from node_modules first
-        const packagePath = join(input.cwd, "node_modules", name, "package.json");
+        const packagePath = join(resolvedCwd, "node_modules", name, "package.json");
         const pkgData = JSON.parse(await readFile(packagePath, "utf-8"));
         
         const license = pkgData.license || pkgData.licenses || "Unknown";
@@ -218,7 +218,8 @@ async function handleCheckLicense(args: unknown) {
 
 async function handleCleanCache(args: unknown) {
   const input = CleanCacheSchema.parse(args);
-  const { packageManager } = await detectPackageManager(input.cwd);
+  const resolvedCwd = input.cwd === "." ? process.cwd() : input.cwd;
+  const { packageManager } = await detectPackageManager(resolvedCwd);
   
   try {
     let command: string[];
@@ -240,7 +241,7 @@ async function handleCleanCache(args: unknown) {
     }
     
     const { stdout, stderr } = await execa(command[0], command.slice(1), {
-      cwd: input.cwd
+      cwd: resolvedCwd
     });
     
     return {

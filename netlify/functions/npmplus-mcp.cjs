@@ -462,27 +462,42 @@ function makePostRequest(url, postData) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postDataString)
+        'Content-Length': Buffer.byteLength(postDataString),
+        'User-Agent': 'npmplus-mcp/11.0.2'
       }
     };
     
+    // Debug logging
+    console.log('Making POST request to:', url);
+    console.log('Request options:', options);
+    console.log('Post data:', postDataString);
+    
     const req = https.request(options, (res) => {
       let data = '';
+      console.log('Response status:', res.statusCode);
+      console.log('Response headers:', res.headers);
+      
       res.on('data', (chunk) => data += chunk);
       res.on('end', () => {
+        console.log('Response data:', data.substring(0, 500)); // Log first 500 chars
+        
         if (res.statusCode >= 400) {
-          reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`));
+          reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage} - ${data}`));
           return;
         }
         try {
           resolve(JSON.parse(data));
         } catch (error) {
-          reject(new Error('Invalid JSON response'));
+          reject(new Error(`Invalid JSON response: ${error.message} - Data: ${data.substring(0, 200)}`));
         }
       });
     });
     
-    req.on('error', reject);
+    req.on('error', (error) => {
+      console.error('Request error:', error);
+      reject(new Error(`Network error: ${error.message}`));
+    });
+    
     req.write(postDataString);
     req.end();
   });
@@ -507,13 +522,22 @@ async function getPackageJsonData(args) {
       // Resolve the working directory
       let workingDir;
       if (cwd === '.') {
-        // For Netlify Functions, we need to handle "." specially
-        // Try to use a more reasonable default or the current process directory
-        workingDir = process.env.LAMBDA_TASK_ROOT || process.cwd();
+        // In Netlify Functions, process.cwd() returns "/" which is not useful
+        // We need to provide better guidance for hosted services
+        if (process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY) {
+          // We're in a serverless environment - can't resolve "." meaningfully
+          throw new Error('Cannot use "." as working directory in hosted environment. Please provide the full absolute path to your project directory.');
+        } else {
+          // Local environment - use actual current directory
+          workingDir = process.cwd();
+        }
       } else if (path.isAbsolute(cwd)) {
         workingDir = cwd;
       } else {
         // Relative path - resolve from current working directory
+        if (process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY) {
+          throw new Error('Cannot use relative paths in hosted environment. Please provide the full absolute path to your project directory.');
+        }
         workingDir = path.resolve(process.cwd(), cwd);
       }
       
@@ -829,16 +853,30 @@ async function checkVulnerability(args) {
     }
     
     // Check OSV (Open Source Vulnerabilities) database
-    const osvUrl = 'https://api.osv.dev/v1/query';
-    const osvQuery = {
-      package: {
-        name: packageName,
-        ecosystem: 'npm'
-      },
-      version: targetVersion
-    };
-    
-    const osvData = await makePostRequest(osvUrl, osvQuery);
+    // Try multiple approaches to make the request work
+    let osvData;
+    try {
+      // First try with our custom POST request
+      const osvUrl = 'https://api.osv.dev/v1/query';
+      const osvQuery = {
+        package: {
+          name: packageName,
+          ecosystem: 'npm'
+        },
+        version: targetVersion
+      };
+      
+      osvData = await makePostRequest(osvUrl, osvQuery);
+    } catch (postError) {
+      // If POST request fails, try a different approach using the packages endpoint
+      try {
+        const osvPackageUrl = `https://api.osv.dev/v1/packages/npm/${encodeURIComponent(packageName)}`;
+        osvData = await makeRequest(osvPackageUrl);
+      } catch (getError) {
+        // If both fail, provide a fallback response
+        throw new Error(`Unable to check vulnerabilities: POST failed (${postError.message}), GET failed (${getError.message}). The OSV API may be temporarily unavailable.`);
+      }
+    }
     
     let message = `🔒 Vulnerability Check for ${packageName}@${targetVersion}:\n\n`;
     
@@ -878,10 +916,25 @@ async function checkVulnerability(args) {
       }]
     };
   } catch (error) {
+    // Enhanced error reporting for debugging
+    console.error('Vulnerability check error details:', {
+      packageName,
+      version,
+      error: error.message,
+      stack: error.stack
+    });
+    
     return {
       content: [{
         type: "text",
-        text: `❌ Vulnerability check failed: ${error.message}\n\nFor comprehensive security analysis, run \`npm audit\` locally or use:\nhttps://github.com/shacharsol/js-package-manager-mcp`
+        text: `❌ Vulnerability check failed for ${packageName}${version ? `@${version}` : ''}:\n\n` +
+              `Error: ${error.message}\n\n` +
+              `💡 Alternative security checks:\n` +
+              `• Run \`npm audit\` locally for immediate results\n` +
+              `• Check https://www.npmjs.com/package/${packageName} for security advisories\n` +
+              `• Use \`npm audit --audit-level=moderate\` for detailed local analysis\n\n` +
+              `For full-featured vulnerability scanning, use the self-hosted version:\n` +
+              `https://github.com/shacharsol/js-package-manager-mcp`
       }]
     };
   }

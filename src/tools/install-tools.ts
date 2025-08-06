@@ -1,5 +1,6 @@
 import { execa } from "execa";
 import { detectPackageManager } from "../pm-detect.js";
+import { resolveProjectCwd } from "../utils/path-resolver.js";
 import { 
   InstallPackagesSchema, 
   UpdatePackagesSchema, 
@@ -46,10 +47,11 @@ export const handlers = new Map([
 
 async function handleInstallPackages(args: unknown) {
   const input = InstallPackagesSchema.parse(args);
-  const resolvedCwd = input.cwd === "." ? process.cwd() : input.cwd;
-  const { packageManager } = await detectPackageManager(resolvedCwd);
   
   try {
+    const resolvedCwd = resolveProjectCwd(input.cwd);
+    const { packageManager } = await detectPackageManager(resolvedCwd);
+    
     const command = [packageManager, "install", ...input.packages];
     
     // Add flags
@@ -76,10 +78,11 @@ async function handleInstallPackages(args: unknown) {
 
 async function handleUpdatePackages(args: unknown) {
   const input = UpdatePackagesSchema.parse(args);
-  const resolvedCwd = input.cwd === "." ? process.cwd() : input.cwd;
-  const { packageManager } = await detectPackageManager(resolvedCwd);
   
   try {
+    const resolvedCwd = resolveProjectCwd(input.cwd);
+    const { packageManager } = await detectPackageManager(resolvedCwd);
+    
     const command = [packageManager, "update"];
     
     if (input.packages) {
@@ -100,10 +103,11 @@ async function handleUpdatePackages(args: unknown) {
 
 async function handleRemovePackages(args: unknown) {
   const input = RemovePackagesSchema.parse(args);
-  const resolvedCwd = input.cwd === "." ? process.cwd() : input.cwd;
-  const { packageManager } = await detectPackageManager(resolvedCwd);
   
   try {
+    const resolvedCwd = resolveProjectCwd(input.cwd);
+    const { packageManager } = await detectPackageManager(resolvedCwd);
+    
     const command = [packageManager, "uninstall", ...input.packages];
     
     if (input.global) {
@@ -125,8 +129,10 @@ async function handleRemovePackages(args: unknown) {
 
 async function handleCheckOutdated(args: unknown) {
   const input = CheckOutdatedSchema.parse(args);
-  const resolvedCwd = input.cwd === "." ? process.cwd() : input.cwd;
-  const { packageManager } = await detectPackageManager(resolvedCwd);
+  
+  try {
+    const resolvedCwd = resolveProjectCwd(input.cwd);
+    const { packageManager } = await detectPackageManager(resolvedCwd);
   
   try {
     const command = [packageManager, "outdated"];
@@ -146,6 +152,9 @@ async function handleCheckOutdated(args: unknown) {
       return createSuccessResponse(`📊 Outdated packages:\n\n${error.stdout}`);
     }
     
+    return createErrorResponse(error, 'Failed to check outdated packages');
+  }
+  } catch (error) {
     return createErrorResponse(error, 'Failed to check outdated packages');
   }
 }

@@ -15,6 +15,8 @@
     "test": "jest",
     "test:deployment": "./scripts/validate-deployment.sh",
     "test:production": "node scripts/quick-test-production.js",
+    "test:comprehensive": "node scripts/comprehensive-test.js",
+    "test:issues": "node scripts/test-reported-issues.js",
     "deploy:production": "./scripts/deploy-production.sh",
     "prepublishOnly": "npm run clean && npm run build",
     "bump": "./scripts/bump-version.sh"
@@ -75,6 +77,7 @@
     "rimraf": "^5.0.5",
     "ts-jest": "^29.4.0",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "uuid": "^9.0.0"
   }
 }

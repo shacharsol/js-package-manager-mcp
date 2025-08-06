@@ -6,6 +6,7 @@ import { detectPackageManager } from "../pm-detect.js";
 import { httpClient } from "../http-client.js";
 import { cache, CacheManager } from "../cache.js";
 import { CACHE_SETTINGS } from "../constants.js";
+import { resolveProjectCwd } from "../utils/path-resolver.js";
 import {
   createSuccessResponse,
   createErrorResponse
@@ -68,22 +69,11 @@ export const handlers = new Map([
 
 // Helper function to resolve and validate working directory
 async function resolveWorkingDirectory(cwd: string): Promise<string> {
-  const resolvedCwd = path.resolve(cwd === "." || cwd === "/" ? process.cwd() : cwd);
-  
-  // Verify the directory exists
   try {
-    const stats = await fs.stat(resolvedCwd);
-    if (!stats.isDirectory()) {
-      throw new Error(`Path is not a directory: ${resolvedCwd}`);
-    }
-    
-    // Check if package.json exists
-    await fs.access(path.join(resolvedCwd, 'package.json'));
+    return resolveProjectCwd(cwd);
   } catch (error) {
-    throw new Error(`Invalid project directory or missing package.json: ${resolvedCwd}`);
+    throw new Error(`Invalid project directory: ${error instanceof Error ? error.message : String(error)}`);
   }
-  
-  return resolvedCwd;
 }
 
 async function handleDependencyTree(args: unknown) {

@@ -4,6 +4,7 @@ import { readFile, readdir } from "fs/promises";
 import path, { join } from "path";
 import { detectPackageManager } from "../pm-detect.js";
 import { httpClient } from "../http-client.js";
+import { resolveProjectCwd, resolveCwd } from "../utils/path-resolver.js";
 import { CacheService } from '../services/CacheService.js';
 import { PackageService } from '../services/PackageService.js';
 import { PackageManagerService } from '../services/PackageManagerService.js';
@@ -63,8 +64,9 @@ export const handlers = new Map([
 
 async function handleListLicenses(args: unknown) {
   const input = ListLicensesSchema.parse(args);
-  const resolvedCwd = path.resolve(input.cwd === "." || input.cwd === "/" ? process.cwd() : input.cwd);
+  
   try {
+    const resolvedCwd = resolveProjectCwd(input.cwd);
     // Read package.json and lock file to get all dependencies
     const packageJson = JSON.parse(
       await readFile(join(resolvedCwd, "package.json"), "utf-8")
@@ -218,10 +220,11 @@ async function handleCheckLicense(args: unknown) {
 
 async function handleCleanCache(args: unknown) {
   const input = CleanCacheSchema.parse(args);
-  const resolvedCwd = input.cwd === "." ? process.cwd() : input.cwd;
-  const { packageManager } = await detectPackageManager(resolvedCwd);
   
   try {
+    const resolvedCwd = resolveCwd(input.cwd);
+    const { packageManager } = await detectPackageManager(resolvedCwd);
+    
     let command: string[];
     
     switch (packageManager) {

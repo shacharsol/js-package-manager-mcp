@@ -8,7 +8,7 @@ import { resolveProjectCwd, resolveCwd } from "../utils/path-resolver.js";
 import { CacheService } from '../services/CacheService.js';
 import { PackageService } from '../services/PackageService.js';
 import { PackageManagerService } from '../services/PackageManagerService.js';
-import { URLS } from '../constants.js';
+import { URLS, VERSION } from '../constants.js';  // Add VERSION to imports
 
 const ListLicensesSchema = z.object({
   cwd: z.string().default(process.cwd()).describe("Working directory"),
@@ -52,6 +52,12 @@ export const tools = [
     name: "package_info",
     description: "Get detailed information about a package",
     inputSchema: PackageInfoSchema
+  },
+  // ADD THIS NEW TOOL
+  {
+    name: "debug_version",
+    description: "Get debug information about the running MCP server version",
+    inputSchema: z.object({})  // Empty schema since no inputs needed
   }
 ];
 
@@ -59,7 +65,8 @@ export const handlers = new Map([
   ["list_licenses", handleListLicenses],
   ["check_license", handleCheckLicense],
   ["clean_cache", handleCleanCache],
-  ["package_info", handlePackageInfo]
+  ["package_info", handlePackageInfo],
+  ["debug_version", handleDebugVersion]  // ADD THIS HANDLER MAPPING
 ]);
 
 async function handleListLicenses(args: unknown) {
@@ -356,4 +363,57 @@ async function handlePackageInfo(args: unknown) {
       isError: true
     };
   }
+}
+
+// ADD THIS NEW HANDLER FUNCTION
+async function handleDebugVersion(args: unknown) {
+  const debugInfo = {
+    version: VERSION,
+    serverTime: new Date().toISOString(),
+    processUptime: process.uptime(),
+    currentWorkingDirectory: process.cwd(),
+    nodeVersion: process.version,
+    platform: process.platform,
+    pid: process.pid,
+    env: {
+      NODE_ENV: process.env.NODE_ENV || 'production',
+      npm_package_version: process.env.npm_package_version,
+      USER: process.env.USER,
+      HOME: process.env.HOME
+    }
+  };
+  
+  // Log to console for debugging
+  console.log('[npmplus-mcp] Debug version called:', JSON.stringify(debugInfo, null, 2));
+  
+  return {
+    content: [
+      {
+        type: "text",
+        text: `🔍 NPMPlus MCP Debug Information:
+
+Version: ${debugInfo.version}
+Server Time: ${debugInfo.serverTime}
+Process Uptime: ${Math.floor(debugInfo.processUptime)} seconds
+Current Directory: ${debugInfo.currentWorkingDirectory}
+Node Version: ${debugInfo.nodeVersion}
+Platform: ${debugInfo.platform}
+Process ID: ${debugInfo.pid}
+
+Environment:
+  NODE_ENV: ${debugInfo.env.NODE_ENV}
+  npm_package_version: ${debugInfo.env.npm_package_version || 'not set'}
+  User: ${debugInfo.env.USER}
+  Home: ${debugInfo.env.HOME}
+
+Note: If this shows a different version than expected, the MCP may be cached.
+Try restarting Claude Desktop to pick up the latest version.
+
+Debug Log Instructions:
+- Check console output where Claude was started
+- Or check system logs for npmplus-mcp entries
+- Look for messages starting with [npmplus-mcp]`
+      }
+    ]
+  };
 }

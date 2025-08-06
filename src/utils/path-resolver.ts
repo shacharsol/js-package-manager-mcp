@@ -13,12 +13,24 @@ export function resolveCwd(cwd: string): string {
   
   // Handle special case of "." which should be current working directory
   if (cwd === '.') {
+    // CRITICAL FIX: When MCP server runs from root, don't resolve "." to "/"
+    // Instead, let npm/yarn handle the current directory resolution
+    if (process.cwd() === '/') {
+      // For MCP servers running from root, return "." to let the package manager
+      // resolve it from the actual user's directory
+      return '.';
+    }
     resolvedPath = process.cwd();
   } else if (isAbsolute(cwd)) {
     resolvedPath = cwd;
   } else {
     // Resolve relative paths against current working directory
     resolvedPath = resolve(process.cwd(), cwd);
+  }
+  
+  // Skip validation for "." when running from root
+  if (cwd === '.' && process.cwd() === '/') {
+    return '.';
   }
   
   // Validate that the path exists and is a directory
@@ -41,6 +53,12 @@ export function resolveCwd(cwd: string): string {
  * @returns True if package.json exists
  */
 export function isNodeProject(cwd: string): boolean {
+  // Special handling for "." when MCP runs from root
+  if (cwd === '.' && process.cwd() === '/') {
+    // Can't validate, just trust that npm/yarn will handle it
+    return true;
+  }
+  
   const resolvedPath = resolveCwd(cwd);
   return existsSync(resolve(resolvedPath, 'package.json'));
 }
@@ -53,6 +71,12 @@ export function isNodeProject(cwd: string): boolean {
  * @throws Error if not a valid Node.js project directory
  */
 export function resolveProjectCwd(cwd: string): string {
+  // Special handling for "." when MCP runs from root
+  if (cwd === '.' && process.cwd() === '/') {
+    // Return "." to let npm/yarn resolve from their execution context
+    return '.';
+  }
+  
   const resolvedPath = resolveCwd(cwd);
   
   if (!isNodeProject(resolvedPath)) {

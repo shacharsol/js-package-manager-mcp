@@ -14,6 +14,50 @@ import {
   formatList 
 } from "../utils/index.js";
 
+/**
+ * Execute npm command with idealTree error recovery
+ */
+async function executeNpmCommandWithRetry(
+  command: string[],
+  cwd: string,
+  retries = 3
+): Promise<any> {
+  let lastError: any;
+  
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await execa(command[0], command.slice(1), {
+        cwd,
+        env: {
+          ...process.env,
+          npm_config_legacy_peer_deps: 'true',
+          npm_config_fund: 'false'
+        }
+      });
+    } catch (error: any) {
+      lastError = error;
+      const errorMessage = error.stderr || error.message || '';
+      
+      if (errorMessage.includes('Tracker "idealTree" already exists')) {
+        // Clean npm cache and retry
+        try {
+          await execa('npm', ['cache', 'clean', '--force'], { cwd });
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (cleanError) {
+          // Ignore clean errors
+        }
+        
+        if (attempt < retries) {
+          continue;
+        }
+      }
+      
+      throw error;
+    }
+  }
+  
+  throw lastError;
+}
 // Export tools and handlers
 export const tools = [
   {
@@ -63,10 +107,7 @@ async function handleInstallPackages(args: unknown) {
       command.push("--global");
     }
     
-    const { stdout } = await execa(command[0], command.slice(1), {
-      cwd: resolvedCwd
-    });
-    
+    const { stdout } = await executeNpmCommandWithRetry(command, resolvedCwd);
     const packageList = formatList(input.packages);
     return createSuccessResponse(
       `✅ Successfully installed ${packageList}\n\n${stdout}`
@@ -89,9 +130,7 @@ async function handleUpdatePackages(args: unknown) {
       command.push(...input.packages);
     }
     
-    const { stdout } = await execa(command[0], command.slice(1), {
-      cwd: resolvedCwd
-    });
+    const { stdout } = await executeNpmCommandWithRetry(command, resolvedCwd);
     
     const target = input.packages ? formatList(input.packages) : 'all packages';
     return createSuccessResponse(`✅ Successfully updated ${target}\n\n${stdout}`);
@@ -114,9 +153,7 @@ async function handleRemovePackages(args: unknown) {
       command.push("--global");
     }
     
-    const { stdout } = await execa(command[0], command.slice(1), {
-      cwd: resolvedCwd
-    });
+    const { stdout } = await executeNpmCommandWithRetry(command, resolvedCwd);
     
     const packageList = formatList(input.packages);
     return createSuccessResponse(

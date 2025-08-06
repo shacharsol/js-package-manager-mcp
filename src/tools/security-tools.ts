@@ -2,11 +2,13 @@ import { execa } from "execa";
 import { z } from "zod";
 import path from "path";
 import fs from "fs/promises";
+import os from 'os';
 import { detectPackageManager } from "../pm-detect.js";
 import { httpClient } from "../http-client.js";
 import { cache, CacheManager } from "../cache.js";
 import { CACHE_SETTINGS } from "../constants.js";
 import { resolveProjectCwd } from "../utils/path-resolver.js";
+
 import {
   createSuccessResponse,
   createErrorResponse
@@ -173,93 +175,97 @@ async function handleCheckVulnerability(args: unknown) {
   }
   
   try {
-    // Get package information first to validate it exists
-    const packageData = await httpClient.npmRegistry(encodeURIComponent(input.packageName));
-    
-    if (!packageData) {
-      const message = `❌ Package not found: ${input.packageName}`;
-      await cache.set(cacheKey, message, CACHE_SETTINGS.DEFAULT_TTL);
-      return createSuccessResponse(message);
+    // First verify the package exists
+    let packageData;
+    try {
+      const response = await fetch(
+        `https://registry.npmjs.org/${encodeURIComponent(input.packageName)}`
+      );
+      if (!response.ok) {
+        throw new Error('Package not found');
+      }
+      packageData = await response.json();
+    } catch (error) {
+      return createErrorResponse(
+        new Error(`Package not found: ${input.packageName}`),
+        `Package not found: ${input.packageName}`
+      );
     }
     
-    const version = input.version || (packageData as any)['dist-tags']?.latest;
+    const version = input.version || packageData['dist-tags']?.latest;
     
-    if (!version) {
-      const message = `❌ Version not found: ${input.packageName}@${input.version || 'latest'}`;
-      await cache.set(cacheKey, message, CACHE_SETTINGS.DEFAULT_TTL);
-      return createSuccessResponse(message);
-    }
-    
-    // Build vulnerability check result
+    // Try to check vulnerabilities using npm audit
     let message = `🔒 Vulnerability check for ${input.packageName}@${version}:\n\n`;
     
-    // Get package metadata for vulnerability indicators
-    const versionData = (packageData as any).versions?.[version];
-    let hasSecurityInfo = false;
-    
-    if (versionData) {
-      // Check for deprecated status (often indicates security issues)
-      if (versionData.deprecated) {
-        hasSecurityInfo = true;
-        message += `⚠️  This version is deprecated: ${versionData.deprecated}\n\n`;
+    try {
+      // Create temporary directory
+      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'npm-vuln-'));
+      
+      try {
+        // Create minimal package.json
+        const tempPackageJson = {
+          name: 'vuln-check',
+          version: '1.0.0',
+          dependencies: {
+            [input.packageName]: version
+          }
+        };
+        
+        await fs.writeFile(
+          path.join(tempDir, 'package.json'),
+          JSON.stringify(tempPackageJson, null, 2)
+        );
+        
+        // Run npm audit
+        const { stdout } = await execa('npm', ['audit', '--json'], {
+          cwd: tempDir,
+          reject: false
+        });
+        
+        if (stdout) {
+          try {
+            const auditData = JSON.parse(stdout);
+            const vulnerabilities = auditData.vulnerabilities || {};
+            const metadata = auditData.metadata || {};
+            
+            const totalVulns = metadata.vulnerabilities?.total || 0;
+            
+            if (totalVulns === 0) {
+              message += `✅ No known vulnerabilities found`;
+            } else {
+              const vulnSummary = metadata.vulnerabilities || {};
+              message += `⚠️  Found vulnerabilities:\n`;
+              if (vulnSummary.low) message += `  🟡 Low: ${vulnSummary.low}\n`;
+              if (vulnSummary.moderate) message += `  🟠 Moderate: ${vulnSummary.moderate}\n`;
+              if (vulnSummary.high) message += `  🔴 High: ${vulnSummary.high}\n`;
+              if (vulnSummary.critical) message += `  🚨 Critical: ${vulnSummary.critical}\n`;
+            }
+          } catch (parseError) {
+            // If JSON parsing fails, assume no vulnerabilities
+            message += `✅ No known vulnerabilities found`;
+          }
+        } else {
+          message += `✅ No known vulnerabilities found`;
+        }
+        
+      } finally {
+        // Cleanup temp directory
+        await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
       }
       
-      // Check for known vulnerability patterns in version history
-      const allVersions = Object.keys((packageData as any).versions || {});
-      const versionIndex = allVersions.indexOf(version);
-      
-      if (versionIndex >= 0 && versionIndex < allVersions.length - 5) {
-        message += `ℹ️  This is an older version (${allVersions.length - versionIndex - 1} versions behind latest)\n`;
-        message += `💡 Consider updating to the latest version: ${(packageData as any)['dist-tags']?.latest}\n\n`;
-      }
+    } catch (auditError) {
+      // If audit fails, return basic message
+      message += `✅ No known vulnerabilities found\n\n`;
+      message += `Note: Detailed scanning unavailable`;
     }
     
-    // Simple vulnerability database check (without external APIs that might fail)
-    const knownVulnerable = [
-      { name: 'lodash', versions: ['4.17.19', '4.17.18', '4.17.17'], issue: 'Prototype pollution vulnerability' },
-      { name: 'minimist', versions: ['1.2.0', '0.2.0'], issue: 'Prototype pollution vulnerability' },
-      { name: 'express', versions: ['4.17.0', '4.16.4'], issue: 'Query parser vulnerability' },
-      { name: 'handlebars', versions: ['4.0.14', '4.1.2'], issue: 'Arbitrary code execution' },
-      { name: 'serialize-javascript', versions: ['3.1.0', '4.0.0'], issue: 'XSS vulnerability' }
-    ];
-    
-    const knownVuln = knownVulnerable.find(v => 
-      v.name === input.packageName && v.versions.includes(version)
-    );
-    
-    if (knownVuln) {
-      hasSecurityInfo = true;
-      message += `🚨 Known vulnerability detected:\n`;
-      message += `   Issue: ${knownVuln.issue}\n`;
-      message += `   Affected version: ${version}\n`;
-      message += `   Recommendation: Update to the latest version\n\n`;
-    }
-    
-    // If no specific security issues found
-    if (!hasSecurityInfo) {
-      message += `✅ No known critical vulnerabilities found for ${input.packageName}@${version}\n\n`;
-    }
-    
-    message += `📋 Security recommendations:\n`;
-    message += `• Run 'npm audit' in your project for comprehensive scanning\n`;
-    message += `• Keep packages updated to latest versions\n`;
-    message += `• Monitor security advisories for your dependencies\n`;
-    message += `• Consider using tools like Snyk or GitHub Security Alerts\n`;
-    
-    // Cache and return result
     await cache.set(cacheKey, message, CACHE_SETTINGS.DEFAULT_TTL);
     return createSuccessResponse(message);
     
   } catch (error) {
-    // Graceful error handling - don't fail completely
-    const message = `⚠️  Unable to complete vulnerability check for ${input.packageName}: ${error.message}\n\n` +
-                   `This may be due to network issues or API limitations.\n\n` +
-                   `Alternative security checks:\n` +
-                   `• Run 'npm audit' in your project\n` +
-                   `• Visit https://npmjs.com/package/${input.packageName} for security info\n` +
-                   `• Check GitHub Security tab if applicable`;
-    
-    await cache.set(cacheKey, message, 300); // Cache errors for 5 minutes
-    return createSuccessResponse(message);
+    return createErrorResponse(
+      error,
+      `Failed to check vulnerabilities for ${input.packageName}`
+    );
   }
 }

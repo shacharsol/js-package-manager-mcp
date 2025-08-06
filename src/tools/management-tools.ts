@@ -384,7 +384,7 @@ async function handleDebugVersion(args: unknown) {
   };
   
   // Log to console for debugging
-  console.log('[npmplus-mcp] Debug version called:', JSON.stringify(debugInfo, null, 2));
+  console.error('[npmplus-mcp] Debug version called:', JSON.stringify(debugInfo, null, 2));
   
   return {
     content: [

@@ -1,4 +1,8 @@
+// src/tools/install-tools.js - Complete fix
+
 import { execa } from "execa";
+import { existsSync, unlinkSync, readFileSync } from "fs";
+import { join } from "path";
 import { detectPackageManager } from "../pm-detect.js";
 import { resolveProjectCwd } from "../utils/path-resolver.js";
 
@@ -24,57 +28,156 @@ type ToolResult = {
   isError?: boolean;
 };
 
+// Global lock to prevent concurrent npm operations
+let npmOperationInProgress = false;
+const npmOperationQueue: Array<() => void> = [];
+
 /**
- * Execute npm command with idealTree error recovery
+ * Clean up npm's internal state to fix idealTree errors
+ */
+async function cleanNpmState(cwd: string): Promise<void> {
+  console.error('[npmplus-mcp] Cleaning npm state...');
+  
+  // 1. Kill any hanging npm processes
+  try {
+    await execa('pkill', ['-f', 'npm'], { reject: false });
+  } catch {
+    // Ignore errors
+  }
+  
+  // 2. Remove npm's internal lock files
+  const npmCachePath = join(
+    process.env.HOME || process.env.USERPROFILE || '',
+    '.npm'
+  );
+  
+  // Common lock file locations
+  const lockFiles = [
+    join(npmCachePath, '_locks'),
+    join(npmCachePath, 'anonymous-cli-metrics.json.lock'),
+    join(cwd, '.npm'),
+    join(cwd, 'package-lock.json.lock')
+  ];
+  
+  for (const lockFile of lockFiles) {
+    try {
+      if (existsSync(lockFile)) {
+        unlinkSync(lockFile);
+        console.error(`[npmplus-mcp] Removed lock file: ${lockFile}`);
+      }
+    } catch {
+      // Ignore errors
+    }
+  }
+  
+  // 3. Clear npm cache
+  try {
+    await execa('npm', ['cache', 'clean', '--force'], { 
+      cwd,
+      timeout: 10000 // 10 second timeout
+    });
+  } catch {
+    // Ignore cache clean errors
+  }
+  
+  // 4. Wait a bit for filesystem to settle
+  await new Promise(resolve => setTimeout(resolve, 500));
+}
+
+/**
+ * Execute npm command with aggressive idealTree error recovery
  */
 async function executeNpmCommandWithRetry(
   command: string[],
   cwd: string,
-  retries = 3
+  maxRetries = 3
 ): Promise<any> {
-  let lastError: any;
-  
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      console.error(`[npmplus-mcp] Attempt ${attempt}/${retries}: ${command.join(' ')}`);
-      
-      return await execa(command[0], command.slice(1), {
-        cwd,
-        env: {
-          ...process.env,
-          npm_config_legacy_peer_deps: 'true',
-          npm_config_fund: 'false',
-          NO_UPDATE_NOTIFIER: '1',
-          NPM_CONFIG_UPDATE_NOTIFIER: 'false'
-        }
-      });
-    } catch (error: any) {
-      lastError = error;
-      const errorMessage = error.stderr || error.message || '';
-      
-      if (errorMessage.includes('Tracker "idealTree" already exists')) {
-        console.error(`[npmplus-mcp] idealTree error detected, cleaning cache...`);
-        
-        // Clean npm cache and retry
-        try {
-          await execa('npm', ['cache', 'clean', '--force'], { cwd });
-          // Kill any hanging npm processes
-          await execa('pkill', ['-f', 'npm install'], { reject: false });
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Progressive delay
-        } catch (cleanError) {
-          // Ignore clean errors
-        }
-        
-        if (attempt < retries) {
-          continue;
-        }
-      }
-      
-      throw error;
-    }
+  // Wait for any other npm operations to complete
+  if (npmOperationInProgress) {
+    console.error('[npmplus-mcp] Waiting for other npm operation to complete...');
+    await new Promise<void>(resolve => {
+      npmOperationQueue.push(resolve);
+    });
   }
   
-  throw lastError;
+  npmOperationInProgress = true;
+  let lastError: any;
+  
+  try {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.error(`[npmplus-mcp] Attempt ${attempt}/${maxRetries}: ${command.join(' ')}`);
+        
+        // For npm, use specific flags to avoid common issues
+        const env: any = {
+          ...process.env,
+          npm_config_fund: 'false',
+          npm_config_audit: 'false',
+          npm_config_update_notifier: 'false',
+          NO_UPDATE_NOTIFIER: '1',
+          NPM_CONFIG_UPDATE_NOTIFIER: 'false'
+        };
+        
+        // Add legacy peer deps flag for npm 7+
+        if (command[0] === 'npm' && command[1] === 'install') {
+          env.npm_config_legacy_peer_deps = 'true';
+        }
+        
+        const result = await execa(command[0], command.slice(1), {
+          cwd,
+          env,
+          timeout: 60000, // 60 second timeout
+          reject: true
+        });
+        
+        // Success!
+        return result;
+        
+      } catch (error: any) {
+        lastError = error;
+        const errorMessage = error.stderr || error.message || '';
+        
+        console.error(`[npmplus-mcp] Error on attempt ${attempt}: ${errorMessage}`);
+        
+        // Check if it's the idealTree error
+        if (errorMessage.includes('Tracker "idealTree" already exists') ||
+            errorMessage.includes('tracker idealtree already exists')) {
+          
+          // Aggressive cleanup before retry
+          await cleanNpmState(cwd);
+          
+          if (attempt < maxRetries) {
+            // Exponential backoff: 1s, 2s, 4s
+            const waitTime = 1000 * Math.pow(2, attempt - 1);
+            console.error(`[npmplus-mcp] Waiting ${waitTime}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
+          }
+        } else if (errorMessage.includes('ENOTEMPTY') || 
+                   errorMessage.includes('EBUSY') ||
+                   errorMessage.includes('EPERM')) {
+          // File system errors - wait and retry
+          if (attempt < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            continue;
+          }
+        }
+        
+        // For other errors or if we've exhausted retries, throw
+        throw error;
+      }
+    }
+    
+    throw lastError || new Error('Command failed after all retries');
+    
+  } finally {
+    // Release the lock and process any queued operations
+    npmOperationInProgress = false;
+    const nextOperation = npmOperationQueue.shift();
+    if (nextOperation) {
+      nextOperation();
+    }
+  }
 }
 
 // Export tools and handlers
@@ -113,6 +216,11 @@ async function handleInstallPackages(args: unknown): Promise<ToolResult> {
   const input = InstallPackagesSchema.parse(args);
   
   try {
+    // First, do a preemptive cleanup if we're in the root directory
+    if (process.cwd() === '/') {
+      await cleanNpmState('.');
+    }
+    
     const resolvedCwd = resolveProjectCwd(input.cwd);
     const { packageManager, lockFile } = await detectPackageManager(resolvedCwd);
     
@@ -145,7 +253,7 @@ async function handleInstallPackages(args: unknown): Promise<ToolResult> {
         break;
     }
     
-    // Use the retry function
+    // Use the retry function with aggressive cleanup
     const result = await executeNpmCommandWithRetry(command, resolvedCwd);
     
     // Parse the output to get installed packages info
@@ -191,10 +299,10 @@ async function handleInstallPackages(args: unknown): Promise<ToolResult> {
     let errorMessage = `Failed to install ${input.packages.join(', ')}: ${error.message}`;
     
     if (error.message?.includes('Tracker "idealTree" already exists')) {
-      errorMessage += '\n\nThis is a known npm issue. Try:\n';
-      errorMessage += '1. Running "npm cache clean --force"\n';
-      errorMessage += '2. Closing other terminal windows running npm\n';
-      errorMessage += '3. Waiting a moment and trying again';
+      errorMessage += '\n\nThis is a known npm issue. The automatic retry failed. Please try:\n';
+      errorMessage += '1. Close all terminal windows and restart Claude\n';
+      errorMessage += '2. Run the clean_cache tool first\n';
+      errorMessage += '3. If the issue persists, manually run: npm cache clean --force';
     } else if (error.message?.includes('EACCES')) {
       errorMessage += '\n\nPermission denied. If installing globally, you may need to:\n';
       errorMessage += '1. Use sudo (not recommended)\n';
@@ -204,6 +312,8 @@ async function handleInstallPackages(args: unknown): Promise<ToolResult> {
       errorMessage += '\n\nPackage not found. Please check:\n';
       errorMessage += '1. Package name is spelled correctly\n';
       errorMessage += '2. Package exists on npm registry';
+    } else if (error.message?.includes('ENOENT')) {
+      errorMessage += '\n\nFile or directory not found. Make sure you\'re in a valid Node.js project directory.';
     }
     
     return createErrorResponse(error, errorMessage);
@@ -320,6 +430,7 @@ async function handleCheckOutdated(args: unknown): Promise<ToolResult> {
     }
     
     try {
+      // Don't use retry for outdated check - it's read-only
       const { stdout } = await execa(command[0], command.slice(1), {
         cwd: resolvedCwd,
         reject: false // Don't reject on non-zero exit codes

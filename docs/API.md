@@ -2,7 +2,9 @@
 
 ## Overview
 
-NPM Plus provides a comprehensive MCP (Model Context Protocol) server for JavaScript package management. This document describes all available tools and their usage.
+NPM Plus v12.0.14 provides a comprehensive MCP (Model Context Protocol) server for JavaScript package management. This document describes all available tools and their usage.
+
+**Current Status**: 15/16 tools fully functional with production-ready reliability
 
 ## Base URL
 

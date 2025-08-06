@@ -212,10 +212,33 @@ export const handlers = new Map<string, (args: unknown) => Promise<ToolResult>>(
   ["check_outdated", handleCheckOutdated]
 ]);
 
+// src/tools/install-tools.js - Updated handleInstallPackages function
+
 async function handleInstallPackages(args: unknown): Promise<ToolResult> {
   const input = InstallPackagesSchema.parse(args);
   
   try {
+    // Check if it's a global install with npm
+    if (input.global && input.packages.length === 1) {
+      const packageName = input.packages[0];
+      
+      // Suggest using npx for global installs
+      return createSuccessResponse(
+        `💡 Global Install Alternative\n\n` +
+        `Instead of installing ${packageName} globally, you can use npx:\n\n` +
+        `• Run directly: npx ${packageName}\n` +
+        `• Run specific version: npx ${packageName}@latest\n\n` +
+        `Benefits of using npx:\n` +
+        `✓ Always uses the latest version\n` +
+        `✓ No global pollution\n` +
+        `✓ Avoids permission issues\n` +
+        `✓ No idealTree conflicts\n\n` +
+        `If you still want to install globally, you can run:\n` +
+        `npm install -g ${packageName}\n\n` +
+        `Note: Global installs may require sudo on some systems.`
+      );
+    }
+    
     // First, do a preemptive cleanup if we're in the root directory
     if (process.cwd() === '/') {
       await cleanNpmState('.');
@@ -295,25 +318,81 @@ async function handleInstallPackages(args: unknown): Promise<ToolResult> {
   } catch (error: any) {
     console.error(`[npmplus-mcp] Install error:`, error.message);
     
-    // Provide helpful error messages
+    // Check for the idealTree error specifically
+    if (error.message?.includes('Tracker "idealTree" already exists')) {
+      return createErrorResponse(error,
+        `⚠️ NPM Installation Blocked - Manual Fix Required\n\n` +
+        `This is a known npm bug that requires manual intervention.\n\n` +
+        `🔧 Quick Fix (copy and run in Terminal):\n` +
+        `\`\`\`bash\n` +
+        `rm -rf ~/.npm/_locks\n` +
+        `rm -rf ~/.npm/_cacache/tmp\n` +
+        `npm cache clean --force\n` +
+        `\`\`\`\n\n` +
+        `Then try installing again.\n\n` +
+        `🔍 If the issue persists:\n` +
+        `1. Check for running npm processes: \`ps aux | grep npm\`\n` +
+        `2. Kill any hanging npm processes: \`pkill -f npm\`\n` +
+        `3. Restart your terminal or computer\n\n` +
+        `💡 Alternative Options:\n` +
+        `• Use Yarn: \`yarn add ${input.packages.join(' ')}\`\n` +
+        `• Use PNPM: \`pnpm add ${input.packages.join(' ')}\`\n` +
+        `• For CLI tools, use npx: \`npx ${input.packages[0]}\``
+      );
+    }
+    
+    // Provide helpful error messages for other common errors
     let errorMessage = `Failed to install ${input.packages.join(', ')}: ${error.message}`;
     
-    if (error.message?.includes('Tracker "idealTree" already exists')) {
-      errorMessage += '\n\nThis is a known npm issue. The automatic retry failed. Please try:\n';
-      errorMessage += '1. Close all terminal windows and restart Claude\n';
-      errorMessage += '2. Run the clean_cache tool first\n';
-      errorMessage += '3. If the issue persists, manually run: npm cache clean --force';
-    } else if (error.message?.includes('EACCES')) {
-      errorMessage += '\n\nPermission denied. If installing globally, you may need to:\n';
-      errorMessage += '1. Use sudo (not recommended)\n';
-      errorMessage += '2. Configure npm to use a different directory\n';
-      errorMessage += '3. Use a Node version manager like nvm';
+    if (error.message?.includes('EACCES') || error.message?.includes('permission denied')) {
+      errorMessage = 
+        `❌ Permission Denied\n\n` +
+        `Installing packages globally requires elevated permissions.\n\n` +
+        `🔧 Solutions:\n` +
+        `1. **Recommended**: Use npx instead\n` +
+        `   • Run: \`npx ${input.packages[0]}\`\n\n` +
+        `2. Configure npm to use a different directory:\n` +
+        `   \`\`\`bash\n` +
+        `   mkdir ~/.npm-global\n` +
+        `   npm config set prefix '~/.npm-global'\n` +
+        `   echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc\n` +
+        `   source ~/.bashrc\n` +
+        `   \`\`\`\n\n` +
+        `3. Use a Node version manager (nvm):\n` +
+        `   • Install nvm: https://github.com/nvm-sh/nvm\n` +
+        `   • Global packages will install to your user directory\n\n` +
+        `4. Last resort: Use sudo (not recommended)\n` +
+        `   • Run: \`sudo npm install -g ${input.packages.join(' ')}\``;
     } else if (error.message?.includes('E404')) {
-      errorMessage += '\n\nPackage not found. Please check:\n';
-      errorMessage += '1. Package name is spelled correctly\n';
-      errorMessage += '2. Package exists on npm registry';
-    } else if (error.message?.includes('ENOENT')) {
-      errorMessage += '\n\nFile or directory not found. Make sure you\'re in a valid Node.js project directory.';
+      errorMessage = 
+        `❌ Package Not Found\n\n` +
+        `The package "${input.packages[0]}" could not be found in the npm registry.\n\n` +
+        `🔍 Things to check:\n` +
+        `1. Verify the package name is spelled correctly\n` +
+        `2. Search for similar packages: \`npm search ${input.packages[0]}\`\n` +
+        `3. Check if it exists on npm: https://www.npmjs.com/search?q=${input.packages[0]}\n\n` +
+        `💡 Did you mean one of these?\n` +
+        `• If it's a CLI tool, try: \`npx ${input.packages[0]}\`\n` +
+        `• Common typos: express (not ekspres), lodash (not lowdash)`;
+    } else if (error.message?.includes('ENOENT') || error.message?.includes('no such file')) {
+      errorMessage = 
+        `❌ Invalid Directory\n\n` +
+        `Cannot install packages here. This doesn't appear to be a Node.js project.\n\n` +
+        `🔧 Solutions:\n` +
+        `1. Navigate to a Node.js project directory\n` +
+        `2. Initialize a new project: \`npm init -y\`\n` +
+        `3. For global installs, add the -g flag\n` +
+        `4. For CLI tools, use npx: \`npx ${input.packages[0]}\``;
+    } else if (error.message?.includes('ENOTFOUND') || error.message?.includes('getaddrinfo')) {
+      errorMessage = 
+        `❌ Network Error\n\n` +
+        `Cannot connect to the npm registry.\n\n` +
+        `🔧 Things to check:\n` +
+        `1. Check your internet connection\n` +
+        `2. Check if you're behind a proxy\n` +
+        `3. Try using a different registry:\n` +
+        `   \`npm config set registry https://registry.npmjs.org/\`\n` +
+        `4. Check your DNS settings`;
     }
     
     return createErrorResponse(error, errorMessage);

@@ -9,7 +9,7 @@
  * Current application version used across all components.
  * @constant {string}
  */
-export const VERSION = '12.0.18';
+export const VERSION = '12.0.19';
 
 /**
  * MCP (Model Context Protocol) version supported by this server.
